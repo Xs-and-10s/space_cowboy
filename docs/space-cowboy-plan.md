@@ -107,6 +107,9 @@ Current helpers:
 
 - `space_cowboy_rocket:component/2,3`
 - `space_cowboy_rocket:manifest_endpoint/1,2`
+- `examples/pro_smoke`, which reads local `.env` paths, serves licensed Pro
+  assets from ignored `.local/` storage, renders Rocket custom elements, and
+  exposes a Rocket manifest endpoint.
 
 Future helpers:
 

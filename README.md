@@ -84,6 +84,19 @@ rocket_card() ->
     }).
 ```
 
+For local smoke testing, keep licensed files under ignored `.local/` paths and
+configure them in `.env`:
+
+```sh
+DATASTAR_PRO_BUNDLE='./.local/datastar-pro/datastar-pro.js'
+DATASTAR_PRO_INSPECTOR='./.local/datastar-pro/datastar-inspector.js'
+```
+
+The `examples/pro_smoke` app reads those values, serves the assets locally,
+renders a Rocket custom element, and exposes `/api/rocket/manifests` for Rocket
+manifest publishing. The EUnit smoke skips when the files are absent and runs
+against the real local files when they are present.
+
 ## Optional HTTP/3 / QUIC Spike
 
 The default build does not require QUIC. `space_cowboy:start_quic/2,3`
