@@ -103,10 +103,13 @@ Open-source package:
 - Provides Inspector-friendly development conventions.
 - Documents Stellar as CSS/assets the app owner serves.
 
+Current helpers:
+
+- `space_cowboy_rocket:component/2,3`
+- `space_cowboy_rocket:manifest_endpoint/1,2`
+
 Future helpers:
 
-- `space_cowboy_rocket:manifest_endpoint/1`
-- `space_cowboy_rocket:component/2`
 - `space_cowboy_dev:inspector_headers/0`
 - `space_cowboy_static:priv_dir/2`
 

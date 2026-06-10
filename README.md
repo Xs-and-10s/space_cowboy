@@ -62,6 +62,28 @@ The basic example in `examples/basic` demonstrates active search,
 click-to-edit, a POST-backed save action, finite SSE responses, and a
 long-lived progress stream built with `space_cowboy:sse_loop/1,2`.
 
+## Datastar Pro
+
+Space Cowboy does not vendor Datastar Pro assets. Licensed users can point
+`space_cowboy:datastar_script/1` at their own bundle and use
+`space_cowboy_rocket` for Rocket-friendly server helpers:
+
+```erlang
+routes() ->
+    [
+        {"/api/rocket/manifests", space_cowboy_rocket:manifest_endpoint(
+            <<"{\"version\":1,\"components\":[]}">>,
+            #{on_publish => fun store_manifest/2}
+        )}
+    ].
+
+rocket_card() ->
+    space_cowboy_rocket:component(<<"demo-card">>, #{
+        <<"title">> => <<"Inventory">>,
+        <<"count">> => 5
+    }).
+```
+
 ## Optional HTTP/3 / QUIC Spike
 
 The default build does not require QUIC. `space_cowboy:start_quic/2,3`
