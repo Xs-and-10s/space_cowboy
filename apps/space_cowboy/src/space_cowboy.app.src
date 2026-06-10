@@ -1,0 +1,11 @@
+{application, space_cowboy, [
+    {description, "Datastar-first web app server built on Cowboy"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {space_cowboy_app, []}},
+    {applications, [kernel, stdlib, cowboy, ranch, data_starship]},
+    {env, []},
+    {modules, []},
+    {licenses, ["MIT"]},
+    {links, [{"GitHub", "https://github.com/xs-and-10s/space_cowboy"}]}
+]}.

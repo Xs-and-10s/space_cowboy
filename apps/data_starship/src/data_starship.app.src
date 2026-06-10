@@ -1,0 +1,10 @@
+{application, data_starship, [
+    {description, "Portable Erlang SDK core for Datastar Server-Sent Events"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {applications, [kernel, stdlib]},
+    {env, []},
+    {modules, []},
+    {licenses, ["MIT"]},
+    {links, [{"GitHub", "https://github.com/xs-and-10s/space_cowboy"}]}
+]}.
