@@ -56,6 +56,9 @@ attrs_property_test() ->
 template_wrappers_property_test() ->
     ?assert(proper:quickcheck(prop_template_wrappers_normalize_to_same_bytes(), proper_opts())).
 
+template_lazy_render_property_test() ->
+    ?assert(proper:quickcheck(prop_template_lazy_render_normalizes_to_same_bytes(), proper_opts())).
+
 template_patch_property_test() ->
     ?assert(proper:quickcheck(prop_template_patch_matches_data_starship(), proper_opts())).
 
@@ -78,6 +81,15 @@ prop_template_wrappers_normalize_to_same_bytes() ->
             iolist_to_binary(space_cowboy_template:to_iodata(Iodata)) =:= Expected
                 andalso iolist_to_binary(space_cowboy_template:to_iodata({safe, Iodata})) =:= Expected
                 andalso iolist_to_binary(space_cowboy_template:to_iodata({ok, Iodata})) =:= Expected
+        end).
+
+prop_template_lazy_render_normalizes_to_same_bytes() ->
+    ?FORALL(Iodata, rendered_iodata(),
+        begin
+            Expected = iolist_to_binary(Iodata),
+            Render = fun() -> {safe, Iodata} end,
+            iolist_to_binary(space_cowboy_template:to_iodata(Render)) =:= Expected
+                andalso space_cowboy_template:html(Render) =:= {html, Iodata}
         end).
 
 prop_template_patch_matches_data_starship() ->

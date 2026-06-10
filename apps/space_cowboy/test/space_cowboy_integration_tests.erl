@@ -20,11 +20,14 @@ conformance_test_() ->
                 ?_test(malformed_query_returns_sse_error(BaseUrl)),
                 ?_test(template_safe_html_roundtrip(BaseUrl)),
                 ?_test(template_patch_roundtrip(BaseUrl)),
+                ?_test(template_matrix_html_roundtrip(BaseUrl)),
+                ?_test(template_matrix_patch_roundtrip(BaseUrl)),
                 ?_test(body_signals_post_roundtrip(BaseUrl)),
                 ?_test(heartbeat_stream_roundtrip(BaseUrl)),
                 ?_test(counter_property(BaseUrl)),
                 ?_test(search_property(BaseUrl)),
                 ?_test(template_patch_property(BaseUrl)),
+                ?_test(template_matrix_property(BaseUrl)),
                 ?_test(body_signals_post_property(BaseUrl))
             ]
         end}.
@@ -126,6 +129,27 @@ template_patch_roundtrip({_Name, BaseUrl, _Port}) ->
         Body
     ).
 
+template_matrix_html_roundtrip({_Name, BaseUrl, _Port}) ->
+    lists:foreach(fun(Style) ->
+        {200, Headers, Body} = http_get(BaseUrl ++ "/template-matrix/" ++ Style),
+        ?assertEqual("text/html; charset=utf-8", header("content-type", Headers)),
+        ?assertEqual(expected_matrix_template(<<"Matrix">>), Body)
+    end, matrix_styles()).
+
+template_matrix_patch_roundtrip({_Name, BaseUrl, _Port}) ->
+    lists:foreach(fun(Style) ->
+        {200, Headers, Body} =
+            get_with_signals(BaseUrl ++ "/template-matrix-patch/" ++ Style, #{<<"label">> => <<"Launch">>}),
+        ?assertEqual("text/event-stream", header("content-type", Headers)),
+        ?assertEqual(
+            <<"event: datastar-patch-elements\n"
+              "data: selector #matrix-template\n"
+              "data: mode inner\n"
+              "data: elements ", (expected_matrix_template(<<"Launch">>))/binary, "\n\n">>,
+            Body
+        )
+    end, matrix_styles()).
+
 body_signals_post_roundtrip({_Name, BaseUrl, _Port}) ->
     {200, Headers, Body} = post_with_signals(BaseUrl ++ "/body-signals", #{<<"value">> => <<"Launch">>}),
     ?assertEqual("text/event-stream", header("content-type", Headers)),
@@ -155,6 +179,9 @@ search_property({_Name, BaseUrl, _Port}) ->
 
 template_patch_property({_Name, BaseUrl, _Port}) ->
     ?assert(proper:quickcheck(prop_template_patch_escapes_and_patches(BaseUrl), proper_opts())).
+
+template_matrix_property({_Name, BaseUrl, _Port}) ->
+    ?assert(proper:quickcheck(prop_template_matrix_styles_match(BaseUrl), proper_opts())).
 
 body_signals_post_property({_Name, BaseUrl, _Port}) ->
     ?assert(proper:quickcheck(prop_body_signals_post_roundtrip(BaseUrl), proper_opts())).
@@ -207,6 +234,20 @@ prop_body_signals_post_roundtrip(BaseUrl) ->
                                     "data: signals ", ExpectedJson/binary, "\n\n">>
         end).
 
+prop_template_matrix_styles_match(BaseUrl) ->
+    ?FORALL(Generated, {matrix_style(), search_query()},
+        begin
+            {Style, Label} = Generated,
+            Path = "/template-matrix-patch/" ++ binary_to_list(Style),
+            {200, Headers, Body} = get_with_signals(BaseUrl ++ Path, #{<<"label">> => Label}),
+            ExpectedBody = <<"event: datastar-patch-elements\n"
+                             "data: selector #matrix-template\n"
+                             "data: mode inner\n"
+                             "data: elements ", (expected_matrix_template(Label))/binary, "\n\n">>,
+            header("content-type", Headers) =:= "text/event-stream"
+                andalso Body =:= ExpectedBody
+        end).
+
 expected_search_element(<<>>) ->
     <<"<li data-empty>No query</li>">>;
 expected_search_element(Query) ->
@@ -218,11 +259,22 @@ expected_template_widget(Label) ->
     <<"<button id=\"template-widget\" data-on:click__prevent=\"@post(&#39;/template-patch&#39;)\" data-bind:label data-text=\"$label\" aria-label=\"",
       Escaped/binary, "\">", Escaped/binary, "</button>">>.
 
+expected_matrix_template(Label) ->
+    Escaped = space_cowboy_html:escape(Label),
+    <<"<article id=\"matrix-template\" data-bind:label data-text=\"$label\" data-on:click__prevent=\"@post(&#39;/template-matrix-patch/raw&#39;)\" aria-label=\"",
+      Escaped/binary, "\">", Escaped/binary, "</article>">>.
+
 search_query() ->
     ?LET(Chars, list(search_char()), list_to_binary(Chars)).
 
 search_char() ->
     oneof(lists:seq(32, 126)).
+
+matrix_style() ->
+    elements([<<"raw">>, <<"safe">>, <<"ok">>, <<"lazy">>]).
+
+matrix_styles() ->
+    ["raw", "safe", "ok", "lazy"].
 
 get_with_signals(BaseUrl, Signals) ->
     Json = iolist_to_binary(json:encode(Signals)),

@@ -11,6 +11,8 @@
     malformed/1,
     template/1,
     template_patch/1,
+    template_matrix/1,
+    template_matrix_patch/1,
     body_signals/1,
     heartbeat/1
 ]).
@@ -25,6 +27,8 @@ routes() ->
         {"/malformed", fun ?MODULE:malformed/1},
         {"/template", fun ?MODULE:template/1},
         {"/template-patch", fun ?MODULE:template_patch/1},
+        {"/template-matrix/:style", fun ?MODULE:template_matrix/1},
+        {"/template-matrix-patch/:style", fun ?MODULE:template_matrix_patch/1},
         {"/body-signals", fun ?MODULE:body_signals/1},
         {"/heartbeat", fun ?MODULE:heartbeat/1}
     ].
@@ -100,6 +104,21 @@ template_patch(Req) ->
         })
     ]}.
 
+template_matrix(Req) ->
+    Style = cowboy_req:binding(style, Req),
+    space_cowboy_template:html(template_rendered(Style, <<"Matrix">>)).
+
+template_matrix_patch(Req) ->
+    Style = cowboy_req:binding(style, Req),
+    Signals = signals_or_empty(Req),
+    Label = maps:get(<<"label">>, Signals, <<"Matrix">>),
+    {sse, [
+        space_cowboy_template:patch_elements(template_rendered(Style, Label), #{
+            selector => <<"#matrix-template">>,
+            mode => inner
+        })
+    ]}.
+
 body_signals(Req) ->
     Signals = signals_or_empty(Req),
     Value = maps:get(<<"value">>, Signals, <<"Dock">>),
@@ -146,4 +165,29 @@ template_widget(Label) ->
         <<">">>,
         space_cowboy_html:escape(Label),
         <<"</button>">>
+    ].
+
+template_rendered(<<"raw">>, Label) ->
+    template_matrix_markup(Label);
+template_rendered(<<"safe">>, Label) ->
+    {safe, template_matrix_markup(Label)};
+template_rendered(<<"ok">>, Label) ->
+    {ok, template_matrix_markup(Label)};
+template_rendered(<<"lazy">>, Label) ->
+    fun() -> {safe, template_matrix_markup(Label)} end;
+template_rendered(_Style, Label) ->
+    template_matrix_markup(Label).
+
+template_matrix_markup(Label) ->
+    [
+        <<"<article id=\"matrix-template\"">>,
+        space_cowboy_html:attrs([
+            {<<"data-bind:label">>, true},
+            {<<"data-text">>, <<"$label">>},
+            {<<"data-on:click__prevent">>, <<"@post('/template-matrix-patch/raw')">>},
+            {<<"aria-label">>, Label}
+        ]),
+        <<">">>,
+        space_cowboy_html:escape(Label),
+        <<"</article>">>
     ].

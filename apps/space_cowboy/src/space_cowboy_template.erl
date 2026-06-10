@@ -15,7 +15,8 @@
 -type rendered() ::
     iodata()
     | {safe, iodata()}
-    | {ok, iodata()}.
+    | {ok, iodata()}
+    | fun(() -> rendered()).
 
 -export_type([rendered/0]).
 
@@ -25,6 +26,8 @@ to_iodata({safe, Iodata}) ->
     Iodata;
 to_iodata({ok, Iodata}) ->
     Iodata;
+to_iodata(Render) when is_function(Render, 0) ->
+    to_iodata(Render());
 to_iodata(Iodata) ->
     Iodata.
 

@@ -112,12 +112,15 @@ datastar_sse_h3_parity_test_() ->
                         ?_test(h3_progress_stream_sends_ordered_events(Port)),
                         ?_test(h3_script_endpoint_executes_script_patch(Port)),
                         ?_test(h3_template_patch_roundtrip(Port)),
+                        ?_test(h3_template_matrix_html_roundtrip(Port)),
+                        ?_test(h3_template_matrix_patch_roundtrip(Port)),
                         ?_test(h3_body_signals_post_roundtrip(Port)),
                         ?_test(h3_heartbeat_stream_roundtrip(Port)),
                         ?_test(h3_malformed_query_returns_sse_error(Port)),
                         ?_test(h3_counter_property(Port)),
                         ?_test(h3_search_property(Port)),
                         ?_test(h3_template_patch_property(Port)),
+                        ?_test(h3_template_matrix_property(Port)),
                         ?_test(h3_body_signals_post_property(Port))
                     ]
                 end};
@@ -196,6 +199,21 @@ prop_h3_body_signals_post_roundtrip(Port) ->
             space_cowboy_h3_test_client:header(<<"content-type">>, Headers) =:= <<"text/event-stream">>
                 andalso Body =:= <<"event: datastar-patch-signals\n"
                                     "data: signals ", ExpectedJson/binary, "\n\n">>
+        end).
+
+prop_h3_template_matrix_styles_match(Port) ->
+    ?FORALL(Generated, {matrix_style(), search_query()},
+        begin
+            {Style, Label} = Generated,
+            Path = <<"/template-matrix-patch/", Style/binary>>,
+            {200, Headers, Body} =
+                space_cowboy_h3_test_client:get_with_signals(Port, Path, #{<<"label">> => Label}),
+            ExpectedBody = <<"event: datastar-patch-elements\n"
+                             "data: selector #matrix-template\n"
+                             "data: mode inner\n"
+                             "data: elements ", (expected_matrix_template(Label))/binary, "\n\n">>,
+            space_cowboy_h3_test_client:header(<<"content-type">>, Headers) =:= <<"text/event-stream">>
+                andalso Body =:= ExpectedBody
         end).
 
 listener_name() ->
@@ -309,6 +327,30 @@ h3_template_patch_roundtrip(Port) ->
         Body
     ).
 
+h3_template_matrix_html_roundtrip(Port) ->
+    lists:foreach(fun(Style) ->
+        {200, Headers, Body} =
+            space_cowboy_h3_test_client:get_ok(Port, <<"/template-matrix/", Style/binary>>),
+        ?assertEqual(<<"text/html; charset=utf-8">>,
+            space_cowboy_h3_test_client:header(<<"content-type">>, Headers)),
+        ?assertEqual(expected_matrix_template(<<"Matrix">>), Body)
+    end, matrix_styles()).
+
+h3_template_matrix_patch_roundtrip(Port) ->
+    lists:foreach(fun(Style) ->
+        {200, Headers, Body} =
+            space_cowboy_h3_test_client:get_with_signals(
+                Port, <<"/template-matrix-patch/", Style/binary>>, #{<<"label">> => <<"Launch">>}),
+        ?assertEqual(<<"text/event-stream">>, space_cowboy_h3_test_client:header(<<"content-type">>, Headers)),
+        ?assertEqual(
+            <<"event: datastar-patch-elements\n"
+              "data: selector #matrix-template\n"
+              "data: mode inner\n"
+              "data: elements ", (expected_matrix_template(<<"Launch">>))/binary, "\n\n">>,
+            Body
+        )
+    end, matrix_styles()).
+
 h3_body_signals_post_roundtrip(Port) ->
     {200, Headers, Body} =
         space_cowboy_h3_test_client:post_with_signals(
@@ -350,6 +392,9 @@ h3_search_property(Port) ->
 h3_template_patch_property(Port) ->
     ?assert(proper:quickcheck(prop_h3_template_patch_escapes_and_patches(Port), h3_proper_opts())).
 
+h3_template_matrix_property(Port) ->
+    ?assert(proper:quickcheck(prop_h3_template_matrix_styles_match(Port), h3_proper_opts())).
+
 h3_body_signals_post_property(Port) ->
     ?assert(proper:quickcheck(prop_h3_body_signals_post_roundtrip(Port), h3_proper_opts())).
 
@@ -363,6 +408,17 @@ expected_template_widget(Label) ->
     Escaped = space_cowboy_html:escape(Label),
     <<"<button id=\"template-widget\" data-on:click__prevent=\"@post(&#39;/template-patch&#39;)\" data-bind:label data-text=\"$label\" aria-label=\"",
       Escaped/binary, "\">", Escaped/binary, "</button>">>.
+
+expected_matrix_template(Label) ->
+    Escaped = space_cowboy_html:escape(Label),
+    <<"<article id=\"matrix-template\" data-bind:label data-text=\"$label\" data-on:click__prevent=\"@post(&#39;/template-matrix-patch/raw&#39;)\" aria-label=\"",
+      Escaped/binary, "\">", Escaped/binary, "</article>">>.
+
+matrix_style() ->
+    elements([<<"raw">>, <<"safe">>, <<"ok">>, <<"lazy">>]).
+
+matrix_styles() ->
+    [<<"raw">>, <<"safe">>, <<"ok">>, <<"lazy">>].
 
 available_udp_port() ->
     {ok, Socket} = gen_udp:open(0, [{active, false}]),
