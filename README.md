@@ -56,6 +56,12 @@ start() ->
 - [ADR-compliant SDK plan](docs/sdk-adr-plan.md)
 - [Space Cowboy framework plan](docs/space-cowboy-plan.md)
 
+## Examples
+
+The basic example in `examples/basic` demonstrates active search,
+click-to-edit, a POST-backed save action, finite SSE responses, and a
+long-lived progress stream built with `space_cowboy:sse_loop/1,2`.
+
 ## Optional HTTP/3 / QUIC Spike
 
 The default build does not require QUIC. `space_cowboy:start_quic/2,3`
