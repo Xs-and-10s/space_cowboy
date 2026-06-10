@@ -11,6 +11,7 @@
     malformed/1,
     template/1,
     template_patch/1,
+    body_signals/1,
     heartbeat/1
 ]).
 
@@ -24,6 +25,7 @@ routes() ->
         {"/malformed", fun ?MODULE:malformed/1},
         {"/template", fun ?MODULE:template/1},
         {"/template-patch", fun ?MODULE:template_patch/1},
+        {"/body-signals", fun ?MODULE:body_signals/1},
         {"/heartbeat", fun ?MODULE:heartbeat/1}
     ].
 
@@ -96,6 +98,13 @@ template_patch(Req) ->
             selector => <<"#template-widget">>,
             mode => outer
         })
+    ]}.
+
+body_signals(Req) ->
+    Signals = signals_or_empty(Req),
+    Value = maps:get(<<"value">>, Signals, <<"Dock">>),
+    {sse, [
+        data_starship:patch_signals(#{<<"body">> => Value})
     ]}.
 
 heartbeat(_Req) ->

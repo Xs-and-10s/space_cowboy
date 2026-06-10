@@ -4,6 +4,9 @@
     get/2,
     get_ok/2,
     get_with_signals/3,
+    post/3,
+    post_ok/3,
+    post_with_signals/3,
     header/2,
     percent_encode/1
 ]).
@@ -19,10 +22,30 @@ get_ok(Port, Path) ->
     Result.
 
 get(Port, Path) ->
+    request(Port, <<"GET">>, Path, []).
+
+post_with_signals(Port, Path, Signals) ->
+    Json = iolist_to_binary(json:encode(Signals)),
+    post_ok(Port, Path, Json).
+
+post_ok(Port, Path, Body) ->
+    {ok, Result} = post(Port, Path, Body),
+    Result.
+
+post(Port, Path, Body) ->
+    request(Port, <<"POST">>, Path, [
+        {<<"content-type">>, <<"application/json">>},
+        {<<"content-length">>, integer_to_binary(iolist_size(Body))}
+    ], Body).
+
+request(Port, Method, Path, Headers) ->
+    request(Port, Method, Path, Headers, <<>>).
+
+request(Port, Method, Path, Headers, Body) ->
     case quicer:connect("localhost", Port, h3_conn_opts(), ?H3_TIMEOUT) of
         {ok, Conn} ->
             try
-                h3_request(Conn, Port, Path)
+                h3_request(Conn, Port, Method, Path, Headers, Body)
             after
                 _ = quicer:close_connection(Conn)
             end;
@@ -49,23 +72,33 @@ h3_conn_opts() ->
         {peer_bidi_stream_count, 100}
     ].
 
-h3_request(Conn, Port, Path) ->
+h3_request(Conn, Port, Method, Path, Headers, Body) ->
     {ok, HTTP3Machine0} = h3_client_preface(Conn),
     {ok, StreamRef} = quicer:start_stream(Conn, #{active => true}),
     {ok, StreamID} = quicer:get_stream_id(StreamRef),
     put({quicer_stream, StreamID}, StreamRef),
-    HTTP3Machine1 = cow_http3_machine:init_bidi_stream(StreamID, <<"GET">>, HTTP3Machine0),
+    HTTP3Machine1 = cow_http3_machine:init_bidi_stream(StreamID, Method, HTTP3Machine0),
     PseudoHeaders = #{
-        method => <<"GET">>,
+        method => Method,
         scheme => <<"https">>,
         authority => iolist_to_binary(["localhost:", integer_to_list(Port)]),
         path => Path
     },
-    {ok, fin, HeaderBlock, Instructions, HTTP3Machine2} =
-        cow_http3_machine:prepare_headers(StreamID, HTTP3Machine1, fin, PseudoHeaders, []),
+    HeaderFin = case iolist_size(Body) of
+        0 -> fin;
+        _ -> nofin
+    end,
+    {ok, IsFin, HeaderBlock, Instructions, HTTP3Machine2} =
+        cow_http3_machine:prepare_headers(StreamID, HTTP3Machine1, HeaderFin, PseudoHeaders, Headers),
     ok = h3_send_instructions(Conn, Instructions),
-    ok = cowboy_quicer:send(Conn, StreamID, cow_http3:headers(HeaderBlock), fin),
+    ok = cowboy_quicer:send(Conn, StreamID, cow_http3:headers(HeaderBlock), IsFin),
+    ok = h3_send_body(Conn, StreamID, Body),
     h3_recv(Conn, HTTP3Machine2, #{stream_id => StreamID, headers => [], body => <<>>, unidi => #{}}).
+
+h3_send_body(_Conn, _StreamID, <<>>) ->
+    ok;
+h3_send_body(Conn, StreamID, Body) ->
+    cowboy_quicer:send(Conn, StreamID, cow_http3:data(Body), fin).
 
 h3_client_preface(Conn) ->
     {ok, SettingsBin, HTTP3Machine0} = cow_http3_machine:init(client, #{}),

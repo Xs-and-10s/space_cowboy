@@ -20,10 +20,12 @@ conformance_test_() ->
                 ?_test(malformed_query_returns_sse_error(BaseUrl)),
                 ?_test(template_safe_html_roundtrip(BaseUrl)),
                 ?_test(template_patch_roundtrip(BaseUrl)),
+                ?_test(body_signals_post_roundtrip(BaseUrl)),
                 ?_test(heartbeat_stream_roundtrip(BaseUrl)),
                 ?_test(counter_property(BaseUrl)),
                 ?_test(search_property(BaseUrl)),
-                ?_test(template_patch_property(BaseUrl))
+                ?_test(template_patch_property(BaseUrl)),
+                ?_test(body_signals_post_property(BaseUrl))
             ]
         end}.
 
@@ -124,6 +126,15 @@ template_patch_roundtrip({_Name, BaseUrl, _Port}) ->
         Body
     ).
 
+body_signals_post_roundtrip({_Name, BaseUrl, _Port}) ->
+    {200, Headers, Body} = post_with_signals(BaseUrl ++ "/body-signals", #{<<"value">> => <<"Launch">>}),
+    ?assertEqual("text/event-stream", header("content-type", Headers)),
+    ?assertEqual(
+        <<"event: datastar-patch-signals\n"
+          "data: signals {\"body\":\"Launch\"}\n\n">>,
+        Body
+    ).
+
 heartbeat_stream_roundtrip({_Name, BaseUrl, _Port}) ->
     {200, Headers, Body} = http_get(BaseUrl ++ "/heartbeat"),
     ?assertEqual("text/event-stream", header("content-type", Headers)),
@@ -144,6 +155,9 @@ search_property({_Name, BaseUrl, _Port}) ->
 
 template_patch_property({_Name, BaseUrl, _Port}) ->
     ?assert(proper:quickcheck(prop_template_patch_escapes_and_patches(BaseUrl), proper_opts())).
+
+body_signals_post_property({_Name, BaseUrl, _Port}) ->
+    ?assert(proper:quickcheck(prop_body_signals_post_roundtrip(BaseUrl), proper_opts())).
 
 proper_opts() ->
     [{numtests, ?NUMTESTS}, {to_file, user}].
@@ -183,6 +197,16 @@ prop_template_patch_escapes_and_patches(BaseUrl) ->
                 andalso Body =:= ExpectedBody
         end).
 
+prop_body_signals_post_roundtrip(BaseUrl) ->
+    ?FORALL(Value, search_query(),
+        begin
+            {200, Headers, Body} = post_with_signals(BaseUrl ++ "/body-signals", #{<<"value">> => Value}),
+            ExpectedJson = iolist_to_binary(json:encode(#{<<"body">> => Value})),
+            header("content-type", Headers) =:= "text/event-stream"
+                andalso Body =:= <<"event: datastar-patch-signals\n"
+                                    "data: signals ", ExpectedJson/binary, "\n\n">>
+        end).
+
 expected_search_element(<<>>) ->
     <<"<li data-empty>No query</li>">>;
 expected_search_element(Query) ->
@@ -204,12 +228,24 @@ get_with_signals(BaseUrl, Signals) ->
     Json = iolist_to_binary(json:encode(Signals)),
     http_get(BaseUrl ++ "?datastar=" ++ binary_to_list(percent_encode(Json))).
 
+post_with_signals(Url, Signals) ->
+    Json = iolist_to_binary(json:encode(Signals)),
+    http_post(Url, Json).
+
 http_get(Url) ->
     Request = {Url, []},
     HttpOptions = [],
     Options = [{body_format, binary}],
     {ok, {{_Version, Status, _Reason}, Headers, Body}} =
         httpc:request(get, Request, HttpOptions, Options),
+    {Status, Headers, Body}.
+
+http_post(Url, BodyBytes) ->
+    Request = {Url, [], "application/json", BodyBytes},
+    HttpOptions = [],
+    Options = [{body_format, binary}],
+    {ok, {{_Version, Status, _Reason}, Headers, Body}} =
+        httpc:request(post, Request, HttpOptions, Options),
     {Status, Headers, Body}.
 
 raw_http_get(Port, Path) ->

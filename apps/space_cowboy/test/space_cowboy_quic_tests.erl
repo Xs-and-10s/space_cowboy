@@ -112,11 +112,13 @@ datastar_sse_h3_parity_test_() ->
                         ?_test(h3_progress_stream_sends_ordered_events(Port)),
                         ?_test(h3_script_endpoint_executes_script_patch(Port)),
                         ?_test(h3_template_patch_roundtrip(Port)),
+                        ?_test(h3_body_signals_post_roundtrip(Port)),
                         ?_test(h3_heartbeat_stream_roundtrip(Port)),
                         ?_test(h3_malformed_query_returns_sse_error(Port)),
                         ?_test(h3_counter_property(Port)),
                         ?_test(h3_search_property(Port)),
-                        ?_test(h3_template_patch_property(Port))
+                        ?_test(h3_template_patch_property(Port)),
+                        ?_test(h3_body_signals_post_property(Port))
                     ]
                 end};
         _ ->
@@ -182,6 +184,18 @@ prop_h3_template_patch_escapes_and_patches(Port) ->
                              "data: elements ", (expected_template_widget(Label))/binary, "\n\n">>,
             space_cowboy_h3_test_client:header(<<"content-type">>, Headers) =:= <<"text/event-stream">>
                 andalso Body =:= ExpectedBody
+        end).
+
+prop_h3_body_signals_post_roundtrip(Port) ->
+    ?FORALL(Value, search_query(),
+        begin
+            {200, Headers, Body} =
+                space_cowboy_h3_test_client:post_with_signals(
+                    Port, <<"/body-signals">>, #{<<"value">> => Value}),
+            ExpectedJson = iolist_to_binary(json:encode(#{<<"body">> => Value})),
+            space_cowboy_h3_test_client:header(<<"content-type">>, Headers) =:= <<"text/event-stream">>
+                andalso Body =:= <<"event: datastar-patch-signals\n"
+                                    "data: signals ", ExpectedJson/binary, "\n\n">>
         end).
 
 listener_name() ->
@@ -295,6 +309,17 @@ h3_template_patch_roundtrip(Port) ->
         Body
     ).
 
+h3_body_signals_post_roundtrip(Port) ->
+    {200, Headers, Body} =
+        space_cowboy_h3_test_client:post_with_signals(
+            Port, <<"/body-signals">>, #{<<"value">> => <<"Launch">>}),
+    ?assertEqual(<<"text/event-stream">>, space_cowboy_h3_test_client:header(<<"content-type">>, Headers)),
+    ?assertEqual(
+        <<"event: datastar-patch-signals\n"
+          "data: signals {\"body\":\"Launch\"}\n\n">>,
+        Body
+    ).
+
 h3_heartbeat_stream_roundtrip(Port) ->
     {200, Headers, Body} = space_cowboy_h3_test_client:get_ok(Port, <<"/heartbeat">>),
     ?assertEqual(<<"text/event-stream">>, space_cowboy_h3_test_client:header(<<"content-type">>, Headers)),
@@ -324,6 +349,9 @@ h3_search_property(Port) ->
 
 h3_template_patch_property(Port) ->
     ?assert(proper:quickcheck(prop_h3_template_patch_escapes_and_patches(Port), h3_proper_opts())).
+
+h3_body_signals_post_property(Port) ->
+    ?assert(proper:quickcheck(prop_h3_body_signals_post_roundtrip(Port), h3_proper_opts())).
 
 expected_search_element(<<>>) ->
     <<"<li data-empty>No query</li>">>;
