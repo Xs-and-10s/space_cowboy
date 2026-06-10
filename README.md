@@ -24,12 +24,29 @@ ping(_Req) ->
     ]}.
 ```
 
+Long-lived Datastar streams can use a Cowboy loop handler through the route
+helper:
+
+```erlang
+events_init(_Req, Stream) ->
+    space_cowboy_sse:comment(Stream, <<"open">>),
+    {ok, #{}}.
+
+events_info({progress, Percent}, Stream, State) ->
+    space_cowboy_sse:patch_signals(Stream, #{<<"progress">> => Percent}),
+    {ok, State};
+events_info(done, Stream, State) ->
+    space_cowboy_sse:heartbeat(Stream, <<"close">>),
+    {stop, State}.
+```
+
 ```erlang
 start() ->
     application:ensure_all_started(space_cowboy),
     space_cowboy:start_clear([
         {"/", fun home/1},
-        {"/ping", fun ping/1}
+        {"/ping", fun ping/1},
+        {"/events", space_cowboy:sse_loop(fun events_init/2, fun events_info/3)}
     ], #{port => 8080}).
 ```
 

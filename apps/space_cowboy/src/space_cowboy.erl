@@ -10,16 +10,22 @@
     quic_available/0,
     stop/1,
     dispatch/1,
+    sse_loop/1,
+    sse_loop/2,
     datastar_script/0,
     datastar_script/1
 ]).
 
--type route() :: {binary() | string(), fun()} | {binary() | string(), module(), term()}.
+-type loop_options() :: space_cowboy_loop:options().
+-type route() ::
+    {binary() | string(), fun()}
+    | {binary() | string(), {sse_loop, loop_options()}}
+    | {binary() | string(), module(), term()}.
 -type listener_name() :: atom().
 -type quic_listener() :: term().
 -type quic_error() :: quic_unavailable | quic_start_timeout | term().
 
--export_type([route/0, listener_name/0, quic_listener/0]).
+-export_type([route/0, listener_name/0, quic_listener/0, loop_options/0]).
 
 %% @doc Start an HTTP listener with Datastar-friendly route specs.
 -spec start_clear([route()], map()) -> {ok, pid()} | {error, term()}.
@@ -112,6 +118,19 @@ stop(Name) ->
 dispatch(Routes) ->
     cowboy_router:compile([{'_', [route(Route) || Route <- Routes]}]).
 
+%% @doc Build route options for a long-lived Datastar SSE loop handler.
+-spec sse_loop(loop_options() | space_cowboy_loop:info_fun()) -> {sse_loop, loop_options()}.
+sse_loop(Options) when is_map(Options) ->
+    {sse_loop, Options};
+sse_loop(InfoFun) when is_function(InfoFun, 3) ->
+    {sse_loop, #{info => InfoFun}}.
+
+%% @doc Build route options with explicit init and info callbacks.
+-spec sse_loop(space_cowboy_loop:init_fun(), space_cowboy_loop:info_fun()) ->
+    {sse_loop, loop_options()}.
+sse_loop(InitFun, InfoFun) ->
+    {sse_loop, #{init => InitFun, info => InfoFun}}.
+
 %% @doc Script tag for the public Datastar bundle.
 -spec datastar_script() -> iodata().
 datastar_script() ->
@@ -124,5 +143,7 @@ datastar_script(Src) ->
 
 route({Path, Handler}) when is_function(Handler) ->
     {Path, space_cowboy_handler, #{handler => Handler}};
+route({Path, {sse_loop, Options}}) ->
+    {Path, space_cowboy_loop, Options};
 route({Path, Module, State}) ->
     {Path, Module, State}.

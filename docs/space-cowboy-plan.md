@@ -55,6 +55,19 @@ Handlers return:
 - `space_cowboy_sse:patch_signals/2,3`
 - `space_cowboy_sse:execute_script/2,3`
 
+Long-lived streams use Cowboy's loop handler protocol through
+`space_cowboy:sse_loop/1,2`:
+
+- `space_cowboy:sse_loop(InitFun, InfoFun)` turns a route into a
+  `space_cowboy_loop` handler.
+- `InitFun(Req, Stream)` can send initial comments/events and returns the
+  initial app state.
+- `InfoFun(Message, Stream, State)` handles Erlang messages and returns
+  `{ok, NewState}` or `{stop, NewState}`.
+- `#{heartbeat => Interval}` or
+  `#{heartbeat => #{interval => Interval, label => Label}}` sends automatic
+  SSE comment heartbeats while the stream remains open.
+
 ## Templating Story
 
 Do not invent a mandatory Erlang HTML DSL yet.
@@ -120,7 +133,7 @@ Current spike shape:
 
 1. Split `data_starship` into its own repository/package.
 2. Fill ADR golden tests.
-3. Add Cowboy loop handler for long-lived SSE and heartbeats.
+3. Add richer long-lived SSE examples using the Cowboy loop handler.
 4. Add a real example app for active search, click-to-edit, and progress streaming.
 5. Add Elixir and Gleam smoke projects that import the same Erlang package.
 6. Publish docs with side-by-side Erlang, Elixir, and Gleam usage.

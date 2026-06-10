@@ -116,12 +116,14 @@ datastar_sse_h3_parity_test_() ->
                         ?_test(h3_template_matrix_patch_roundtrip(Port)),
                         ?_test(h3_body_signals_post_roundtrip(Port)),
                         ?_test(h3_heartbeat_stream_roundtrip(Port)),
+                        ?_test(h3_loop_stream_roundtrip(Port)),
                         ?_test(h3_malformed_query_returns_sse_error(Port)),
                         ?_test(h3_counter_property(Port)),
                         ?_test(h3_search_property(Port)),
                         ?_test(h3_template_patch_property(Port)),
                         ?_test(h3_template_matrix_property(Port)),
-                        ?_test(h3_body_signals_post_property(Port))
+                        ?_test(h3_body_signals_post_property(Port)),
+                        ?_test(h3_loop_stream_property(Port))
                     ]
                 end};
         _ ->
@@ -212,6 +214,20 @@ prop_h3_template_matrix_styles_match(Port) ->
                              "data: selector #matrix-template\n"
                              "data: mode inner\n"
                              "data: elements ", (expected_matrix_template(Label))/binary, "\n\n">>,
+            space_cowboy_h3_test_client:header(<<"content-type">>, Headers) =:= <<"text/event-stream">>
+                andalso Body =:= ExpectedBody
+        end).
+
+prop_h3_loop_stream_roundtrip(Port) ->
+    ?FORALL(Value, search_query(),
+        begin
+            {200, Headers, Body} =
+                space_cowboy_h3_test_client:get_with_signals(Port, <<"/loop">>, #{<<"value">> => Value}),
+            ExpectedJson = iolist_to_binary(json:encode(#{<<"loop">> => Value})),
+            ExpectedBody = <<": loop-open\n\n"
+                             "event: datastar-patch-signals\n"
+                             "data: signals ", ExpectedJson/binary, "\n\n"
+                             ": loop-close\n\n">>,
             space_cowboy_h3_test_client:header(<<"content-type">>, Headers) =:= <<"text/event-stream">>
                 andalso Body =:= ExpectedBody
         end).
@@ -374,6 +390,18 @@ h3_heartbeat_stream_roundtrip(Port) ->
         Body
     ).
 
+h3_loop_stream_roundtrip(Port) ->
+    {200, Headers, Body} =
+        space_cowboy_h3_test_client:get_with_signals(Port, <<"/loop">>, #{<<"value">> => <<"Launch">>}),
+    ?assertEqual(<<"text/event-stream">>, space_cowboy_h3_test_client:header(<<"content-type">>, Headers)),
+    ?assertEqual(
+        <<": loop-open\n\n"
+          "event: datastar-patch-signals\n"
+          "data: signals {\"loop\":\"Launch\"}\n\n"
+          ": loop-close\n\n">>,
+        Body
+    ).
+
 h3_malformed_query_returns_sse_error(Port) ->
     {200, Headers, Body} = space_cowboy_h3_test_client:get_ok(Port, <<"/malformed?datastar=%GG">>),
     ?assertEqual(<<"text/event-stream">>, space_cowboy_h3_test_client:header(<<"content-type">>, Headers)),
@@ -397,6 +425,9 @@ h3_template_matrix_property(Port) ->
 
 h3_body_signals_post_property(Port) ->
     ?assert(proper:quickcheck(prop_h3_body_signals_post_roundtrip(Port), h3_proper_opts())).
+
+h3_loop_stream_property(Port) ->
+    ?assert(proper:quickcheck(prop_h3_loop_stream_roundtrip(Port), h3_proper_opts())).
 
 expected_search_element(<<>>) ->
     <<"<li data-empty>No query</li>">>;

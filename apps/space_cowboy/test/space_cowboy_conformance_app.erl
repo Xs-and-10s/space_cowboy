@@ -14,7 +14,10 @@
     template_matrix/1,
     template_matrix_patch/1,
     body_signals/1,
-    heartbeat/1
+    heartbeat/1,
+    loop_init/2,
+    loop_info/3,
+    heartbeat_loop_init/2
 ]).
 
 routes() ->
@@ -30,7 +33,12 @@ routes() ->
         {"/template-matrix/:style", fun ?MODULE:template_matrix/1},
         {"/template-matrix-patch/:style", fun ?MODULE:template_matrix_patch/1},
         {"/body-signals", fun ?MODULE:body_signals/1},
-        {"/heartbeat", fun ?MODULE:heartbeat/1}
+        {"/heartbeat", fun ?MODULE:heartbeat/1},
+        {"/loop", space_cowboy:sse_loop(fun ?MODULE:loop_init/2, fun ?MODULE:loop_info/3)},
+        {"/loop-heartbeat", space_cowboy:sse_loop(#{
+            init => fun ?MODULE:heartbeat_loop_init/2,
+            heartbeat => #{interval => 10, label => <<"loop-heartbeat">>}
+        })}
     ].
 
 home(_Req) ->
@@ -134,6 +142,24 @@ heartbeat(_Req) ->
         space_cowboy_sse:heartbeat(Stream, <<"stream-close">>),
         ok
     end}.
+
+loop_init(Req, Stream) ->
+    Signals = signals_or_empty(Req),
+    Value = maps:get(<<"value">>, Signals, <<"Dock">>),
+    space_cowboy_sse:comment(Stream, <<"loop-open">>),
+    self() ! {patch, Value},
+    {ok, #{}}.
+
+loop_info({patch, Value}, Stream, State) ->
+    space_cowboy_sse:patch_signals(Stream, #{<<"loop">> => Value}),
+    space_cowboy_sse:heartbeat(Stream, <<"loop-close">>),
+    {stop, State};
+loop_info(_Message, _Stream, State) ->
+    {ok, State}.
+
+heartbeat_loop_init(_Req, Stream) ->
+    space_cowboy_sse:comment(Stream, <<"heartbeat-loop-open">>),
+    {ok, #{}}.
 
 signals_or_empty(Req) ->
     case space_cowboy_sse:read_signals(Req) of

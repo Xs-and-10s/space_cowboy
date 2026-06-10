@@ -10,7 +10,7 @@ conformance_test_() ->
     {setup,
         fun setup/0,
         fun cleanup/1,
-        fun(BaseUrl) ->
+        fun(BaseUrl = {_Name, _Url, Port}) ->
             [
                 ?_test(home_page_preserves_datastar_attributes(BaseUrl)),
                 ?_test(counter_patches_signals(BaseUrl)),
@@ -24,11 +24,14 @@ conformance_test_() ->
                 ?_test(template_matrix_patch_roundtrip(BaseUrl)),
                 ?_test(body_signals_post_roundtrip(BaseUrl)),
                 ?_test(heartbeat_stream_roundtrip(BaseUrl)),
+                ?_test(loop_stream_roundtrip(BaseUrl)),
+                ?_test(loop_heartbeat_stream_sends_heartbeats(Port)),
                 ?_test(counter_property(BaseUrl)),
                 ?_test(search_property(BaseUrl)),
                 ?_test(template_patch_property(BaseUrl)),
                 ?_test(template_matrix_property(BaseUrl)),
-                ?_test(body_signals_post_property(BaseUrl))
+                ?_test(body_signals_post_property(BaseUrl)),
+                ?_test(loop_stream_property(BaseUrl))
             ]
         end}.
 
@@ -171,6 +174,24 @@ heartbeat_stream_roundtrip({_Name, BaseUrl, _Port}) ->
         Body
     ).
 
+loop_stream_roundtrip({_Name, BaseUrl, _Port}) ->
+    {200, Headers, Body} = get_with_signals(BaseUrl ++ "/loop", #{<<"value">> => <<"Launch">>}),
+    ?assertEqual("text/event-stream", header("content-type", Headers)),
+    ?assertEqual(
+        <<": loop-open\n\n"
+          "event: datastar-patch-signals\n"
+          "data: signals {\"loop\":\"Launch\"}\n\n"
+          ": loop-close\n\n">>,
+        Body
+    ).
+
+loop_heartbeat_stream_sends_heartbeats(Port) ->
+    RawResponse = raw_http_get_until(Port, <<"/loop-heartbeat">>, <<": loop-heartbeat\n\n">>),
+    ?assertMatch({_, _}, binary:match(RawResponse, <<"HTTP/1.1 200 OK">>)),
+    ?assertMatch({_, _}, binary:match(RawResponse, <<"content-type: text/event-stream">>)),
+    ?assertMatch({_, _}, binary:match(RawResponse, <<": heartbeat-loop-open\n\n">>)),
+    ?assertMatch({_, _}, binary:match(RawResponse, <<": loop-heartbeat\n\n">>)).
+
 counter_property({_Name, BaseUrl, _Port}) ->
     ?assert(proper:quickcheck(prop_counter_roundtrip(BaseUrl), proper_opts())).
 
@@ -185,6 +206,9 @@ template_matrix_property({_Name, BaseUrl, _Port}) ->
 
 body_signals_post_property({_Name, BaseUrl, _Port}) ->
     ?assert(proper:quickcheck(prop_body_signals_post_roundtrip(BaseUrl), proper_opts())).
+
+loop_stream_property({_Name, BaseUrl, _Port}) ->
+    ?assert(proper:quickcheck(prop_loop_stream_roundtrip(BaseUrl), proper_opts())).
 
 proper_opts() ->
     [{numtests, ?NUMTESTS}, {to_file, user}].
@@ -244,6 +268,19 @@ prop_template_matrix_styles_match(BaseUrl) ->
                              "data: selector #matrix-template\n"
                              "data: mode inner\n"
                              "data: elements ", (expected_matrix_template(Label))/binary, "\n\n">>,
+            header("content-type", Headers) =:= "text/event-stream"
+                andalso Body =:= ExpectedBody
+        end).
+
+prop_loop_stream_roundtrip(BaseUrl) ->
+    ?FORALL(Value, search_query(),
+        begin
+            {200, Headers, Body} = get_with_signals(BaseUrl ++ "/loop", #{<<"value">> => Value}),
+            ExpectedJson = iolist_to_binary(json:encode(#{<<"loop">> => Value})),
+            ExpectedBody = <<": loop-open\n\n"
+                             "event: datastar-patch-signals\n"
+                             "data: signals ", ExpectedJson/binary, "\n\n"
+                             ": loop-close\n\n">>,
             header("content-type", Headers) =:= "text/event-stream"
                 andalso Body =:= ExpectedBody
         end).
@@ -312,10 +349,34 @@ raw_http_get(Port, Path) ->
     ok = gen_tcp:close(Socket),
     Response.
 
+raw_http_get_until(Port, Path, Pattern) ->
+    {ok, Socket} = gen_tcp:connect({127, 0, 0, 1}, Port, [binary, {active, false}, {packet, raw}]),
+    Request = [
+        <<"GET ">>, Path, <<" HTTP/1.1\r\n">>,
+        <<"Host: 127.0.0.1\r\n">>,
+        <<"Connection: close\r\n\r\n">>
+    ],
+    ok = gen_tcp:send(Socket, Request),
+    Response = recv_until(Socket, Pattern, []),
+    ok = gen_tcp:close(Socket),
+    Response.
+
 recv_all(Socket, Acc) ->
     case gen_tcp:recv(Socket, 0, 5000) of
         {ok, Data} -> recv_all(Socket, [Data | Acc]);
         {error, closed} -> iolist_to_binary(lists:reverse(Acc))
+    end.
+
+recv_until(Socket, Pattern, Acc) ->
+    Response = iolist_to_binary(lists:reverse(Acc)),
+    case binary:match(Response, Pattern) of
+        {_, _} ->
+            Response;
+        nomatch ->
+            case gen_tcp:recv(Socket, 0, 5000) of
+                {ok, Data} -> recv_until(Socket, Pattern, [Data | Acc]);
+                {error, closed} -> Response
+            end
     end.
 
 header(Name, Headers) ->
