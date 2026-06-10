@@ -18,3 +18,4 @@ _checkouts/
 
 examples/gleam_smoke/build/
 .local/
+.env
