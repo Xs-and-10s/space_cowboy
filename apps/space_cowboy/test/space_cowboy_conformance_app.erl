@@ -10,7 +10,8 @@
     script/1,
     malformed/1,
     template/1,
-    template_patch/1
+    template_patch/1,
+    heartbeat/1
 ]).
 
 routes() ->
@@ -22,7 +23,8 @@ routes() ->
         {"/script", fun ?MODULE:script/1},
         {"/malformed", fun ?MODULE:malformed/1},
         {"/template", fun ?MODULE:template/1},
-        {"/template-patch", fun ?MODULE:template_patch/1}
+        {"/template-patch", fun ?MODULE:template_patch/1},
+        {"/heartbeat", fun ?MODULE:heartbeat/1}
     ].
 
 home(_Req) ->
@@ -95,6 +97,15 @@ template_patch(Req) ->
             mode => outer
         })
     ]}.
+
+heartbeat(_Req) ->
+    {sse_stream, fun(Stream) ->
+        space_cowboy_sse:comment(Stream, <<"stream-open">>),
+        space_cowboy_sse:heartbeat(Stream),
+        space_cowboy_sse:patch_signals(Stream, #{<<"alive">> => true}),
+        space_cowboy_sse:heartbeat(Stream, <<"stream-close">>),
+        ok
+    end}.
 
 signals_or_empty(Req) ->
     case space_cowboy_sse:read_signals(Req) of

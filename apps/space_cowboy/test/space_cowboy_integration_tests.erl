@@ -20,6 +20,7 @@ conformance_test_() ->
                 ?_test(malformed_query_returns_sse_error(BaseUrl)),
                 ?_test(template_safe_html_roundtrip(BaseUrl)),
                 ?_test(template_patch_roundtrip(BaseUrl)),
+                ?_test(heartbeat_stream_roundtrip(BaseUrl)),
                 ?_test(counter_property(BaseUrl)),
                 ?_test(search_property(BaseUrl)),
                 ?_test(template_patch_property(BaseUrl))
@@ -120,6 +121,18 @@ template_patch_roundtrip({_Name, BaseUrl, _Port}) ->
         <<"event: datastar-patch-elements\n"
           "data: selector #template-widget\n"
           "data: elements <button id=\"template-widget\" data-on:click__prevent=\"@post(&#39;/template-patch&#39;)\" data-bind:label data-text=\"$label\" aria-label=\"Launch\">Launch</button>\n\n">>,
+        Body
+    ).
+
+heartbeat_stream_roundtrip({_Name, BaseUrl, _Port}) ->
+    {200, Headers, Body} = http_get(BaseUrl ++ "/heartbeat"),
+    ?assertEqual("text/event-stream", header("content-type", Headers)),
+    ?assertEqual(
+        <<": stream-open\n\n"
+          ": heartbeat\n\n"
+          "event: datastar-patch-signals\n"
+          "data: signals {\"alive\":true}\n\n"
+          ": stream-close\n\n">>,
         Body
     ).
 

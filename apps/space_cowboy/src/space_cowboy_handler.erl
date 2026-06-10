@@ -30,6 +30,9 @@ init(Req0, #{handler := Handler} = State) ->
             ok = StreamFun(Sender),
             cowboy_req:stream_body(<<>>, fin, Req),
             {ok, Req, State};
+        {sse_stream, StreamFun} ->
+            Req = space_cowboy_sse:stream(Req0, StreamFun),
+            {ok, Req, State};
         {ok, Req} ->
             {ok, Req, State}
     end.

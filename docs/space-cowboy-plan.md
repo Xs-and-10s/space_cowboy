@@ -43,8 +43,17 @@ Handlers return:
 - `{json, Body}`
 - `{sse, [Event]}`
 - `{stream, Fun}`
+- `{sse_stream, Fun}`
 - `{reply, Status, Headers, Body}`
 - `{ok, Req}`
+
+`{stream, Fun}` receives a simple sender function for backwards-compatible SSE event streaming. `{sse_stream, Fun}` receives a `space_cowboy_sse` stream context and can use:
+
+- `space_cowboy_sse:comment/2`
+- `space_cowboy_sse:heartbeat/1,2`
+- `space_cowboy_sse:patch_elements/2,3`
+- `space_cowboy_sse:patch_signals/2,3`
+- `space_cowboy_sse:execute_script/2,3`
 
 ## Templating Story
 
