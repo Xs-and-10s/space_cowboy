@@ -107,6 +107,14 @@ Add HTTP/3 behind capability detection:
 - Otherwise evaluate `quicer`/`erlang_quic` as an optional dependency.
 - Keep QUIC optional so the pure SDK and basic HTTP server remain easy to install.
 
+Current spike shape:
+
+- `space_cowboy:start_quic/2,3` mirrors `start_clear/2,3` and uses the same route specs.
+- `space_cowboy:stop_quic/1` closes the returned quicer listener handle.
+- `space_cowboy:quic_available/0` reports whether the optional `quicer` app is available.
+- Without QUIC support, `start_quic/2,3` returns `{error, quic_unavailable}` instead of crashing.
+- Cowboy 2.13 marks `cowboy:start_quic/3` experimental and requires Cowboy to be compiled with `COWBOY_QUICER` plus the `quicer` NIF.
+
 ## Next Implementation Milestones
 
 1. Split `data_starship` into its own repository/package.
