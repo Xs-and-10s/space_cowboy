@@ -52,6 +52,7 @@ start() ->
 
 ## Research And Plan
 
+- [BEAM usage guide](docs/beam-usage.md)
 - [Datastar 1.0 research notes](docs/datastar-1.0-research.md)
 - [ADR-compliant SDK plan](docs/sdk-adr-plan.md)
 - [Space Cowboy framework plan](docs/space-cowboy-plan.md)

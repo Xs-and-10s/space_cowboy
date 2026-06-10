@@ -143,3 +143,5 @@ Current spike shape:
 4. Expand the basic example into active search, click-to-edit, POST-backed save, and progress streaming.
 5. Add Elixir and Gleam smoke projects that import the same Erlang package.
 6. Publish docs with side-by-side Erlang, Elixir, and Gleam usage.
+   Current guide: `docs/beam-usage.md`, with snippet-sync tests against the
+   runnable Elixir and Gleam smoke examples.
