@@ -72,6 +72,12 @@ read_get_signals_test() ->
         data_starship:read_signals(get, <<"datastar=%7B%22foo%22%3A1%7D">>, <<>>)
     ).
 
+read_get_signals_invalid_query_test() ->
+    ?assertEqual(
+        {error, invalid_query},
+        data_starship:read_signals(get, <<"%">>, <<>>)
+    ).
+
 read_post_signals_test() ->
     ?assertEqual(
         {ok, #{<<"foo">> => 1}},

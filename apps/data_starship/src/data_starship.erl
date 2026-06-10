@@ -141,7 +141,7 @@ execute_script(Script, Options) ->
 %% For GET requests this reads the URL query parameter named `datastar'.
 %% For all other methods it decodes the request body as JSON.
 -spec read_signals(read_method(), iodata_or_string(), iodata_or_string()) ->
-    {ok, term()} | {error, missing_datastar | invalid_json | term()}.
+    {ok, term()} | {error, missing_datastar | invalid_json | invalid_query | term()}.
 read_signals(Method, QueryString, Body) ->
     Json = case normalize_method(Method) of
         get -> datastar_query_value(QueryString);
@@ -214,11 +214,52 @@ decode_json(Bytes) ->
     end.
 
 datastar_query_value(QueryString) ->
-    Params = uri_string:dissect_query(to_binary(QueryString)),
-    case lists:keyfind(<<"datastar">>, 1, Params) of
-        {<<"datastar">>, Value} -> {ok, Value};
-        false -> {error, missing_datastar}
+    datastar_query_pairs(binary:split(to_binary(QueryString), <<"&">>, [global])).
+
+datastar_query_pairs([]) ->
+    {error, missing_datastar};
+datastar_query_pairs([Pair | Rest]) ->
+    case decode_query_pair(Pair) of
+        {ok, <<"datastar">>, Value} -> {ok, Value};
+        {ok, _Key, _Value} -> datastar_query_pairs(Rest);
+        {error, invalid_query} -> {error, invalid_query}
     end.
+
+decode_query_pair(Pair) ->
+    {RawKey, RawValue} = case binary:split(Pair, <<"=">>) of
+        [PairKey] -> {PairKey, <<>>};
+        [PairKey, PairValue] -> {PairKey, PairValue}
+    end,
+    case {percent_decode(RawKey), percent_decode(RawValue)} of
+        {{ok, DecodedKey}, {ok, DecodedValue}} -> {ok, DecodedKey, DecodedValue};
+        _ -> {error, invalid_query}
+    end.
+
+percent_decode(Binary) ->
+    percent_decode(Binary, []).
+
+percent_decode(<<>>, Acc) ->
+    {ok, iolist_to_binary(lists:reverse(Acc))};
+percent_decode(<<$+, Rest/binary>>, Acc) ->
+    percent_decode(Rest, [<<" ">> | Acc]);
+percent_decode(<<$%, Hi, Lo, Rest/binary>>, Acc) ->
+    case {hex_value(Hi), hex_value(Lo)} of
+        {{ok, H}, {ok, L}} -> percent_decode(Rest, [<<((H bsl 4) bor L)>> | Acc]);
+        _ -> {error, invalid_query}
+    end;
+percent_decode(<<$%, _Rest/binary>>, _Acc) ->
+    {error, invalid_query};
+percent_decode(<<Byte, Rest/binary>>, Acc) ->
+    percent_decode(Rest, [<<Byte>> | Acc]).
+
+hex_value(Byte) when Byte >= $0, Byte =< $9 ->
+    {ok, Byte - $0};
+hex_value(Byte) when Byte >= $A, Byte =< $F ->
+    {ok, Byte - $A + 10};
+hex_value(Byte) when Byte >= $a, Byte =< $f ->
+    {ok, Byte - $a + 10};
+hex_value(_Byte) ->
+    error.
 
 normalize_method(Method) when is_atom(Method) ->
     Method;
