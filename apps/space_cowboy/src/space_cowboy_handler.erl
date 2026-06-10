@@ -6,9 +6,15 @@
 init(Req0, #{handler := Handler} = State) ->
     case Handler(Req0) of
         {html, Body} ->
-            reply(200, #{<<"content-type">> => <<"text/html; charset=utf-8">>}, Body, Req0, State);
+            reply(
+                200,
+                #{<<"content-type">> => <<"text/html; charset=utf-8">>},
+                space_cowboy_template:to_iodata(Body),
+                Req0,
+                State
+            );
         {html, Body, Headers} ->
-            reply(200, maps:merge(html_headers(), Headers), Body, Req0, State);
+            reply(200, maps:merge(html_headers(), Headers), space_cowboy_template:to_iodata(Body), Req0, State);
         {json, Body} ->
             reply(200, #{<<"content-type">> => <<"application/json">>}, Body, Req0, State);
         {reply, Status, Headers, Body} ->

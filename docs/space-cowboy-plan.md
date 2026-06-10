@@ -61,6 +61,16 @@ Recommended layers:
 
 The key promise: any template engine that can emit complete HTML elements can work.
 
+Current compatibility contract:
+
+- Template output should be iodata, or a common wrapper such as `{safe, Iodata}` or `{ok, Iodata}`.
+- `space_cowboy_template:to_iodata/1` normalizes those shapes.
+- `space_cowboy_template:html/1` builds an HTML handler return value from rendered output.
+- `space_cowboy_template:patch_elements/1,2` turns rendered fragments into Datastar patch events.
+- Datastar attribute names must be preserved exactly; values should be escaped by the template engine or helper.
+
+The conformance tests cover raw iodata and safe wrapped output over both HTML responses and SSE fragment patches.
+
 ## Pro Support
 
 Open-source package:

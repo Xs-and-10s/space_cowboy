@@ -8,7 +8,9 @@
     search/1,
     progress/1,
     script/1,
-    malformed/1
+    malformed/1,
+    template/1,
+    template_patch/1
 ]).
 
 routes() ->
@@ -18,7 +20,9 @@ routes() ->
         {"/search", fun ?MODULE:search/1},
         {"/progress", fun ?MODULE:progress/1},
         {"/script", fun ?MODULE:script/1},
-        {"/malformed", fun ?MODULE:malformed/1}
+        {"/malformed", fun ?MODULE:malformed/1},
+        {"/template", fun ?MODULE:template/1},
+        {"/template-patch", fun ?MODULE:template_patch/1}
     ].
 
 home(_Req) ->
@@ -75,6 +79,23 @@ malformed(Req) ->
     end,
     {sse, [Body]}.
 
+template(_Req) ->
+    space_cowboy_template:html({safe, [
+        <<"<section id=\"template-page\">">>,
+        template_widget(<<"Dock">>),
+        <<"</section>">>
+    ]}).
+
+template_patch(Req) ->
+    Signals = signals_or_empty(Req),
+    Label = maps:get(<<"label">>, Signals, <<"Dock">>),
+    {sse, [
+        space_cowboy_template:patch_elements({safe, template_widget(Label)}, #{
+            selector => <<"#template-widget">>,
+            mode => outer
+        })
+    ]}.
+
 signals_or_empty(Req) ->
     case space_cowboy_sse:read_signals(Req) of
         {ok, Signals} when is_map(Signals) -> Signals;
@@ -91,3 +112,18 @@ reason_to_binary(Reason) when is_atom(Reason) ->
     atom_to_binary(Reason);
 reason_to_binary(Reason) ->
     iolist_to_binary(io_lib:format("~p", [Reason])).
+
+template_widget(Label) ->
+    [
+        <<"<button">>,
+        space_cowboy_html:attrs([
+            {<<"id">>, <<"template-widget">>},
+            {<<"data-on:click__prevent">>, <<"@post('/template-patch')">>},
+            {<<"data-bind:label">>, true},
+            {<<"data-text">>, <<"$label">>},
+            {<<"aria-label">>, Label}
+        ]),
+        <<">">>,
+        space_cowboy_html:escape(Label),
+        <<"</button>">>
+    ].

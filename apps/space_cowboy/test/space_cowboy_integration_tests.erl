@@ -18,8 +18,11 @@ conformance_test_() ->
                 ?_test(progress_stream_sends_ordered_events(BaseUrl)),
                 ?_test(script_endpoint_executes_script_patch(BaseUrl)),
                 ?_test(malformed_query_returns_sse_error(BaseUrl)),
+                ?_test(template_safe_html_roundtrip(BaseUrl)),
+                ?_test(template_patch_roundtrip(BaseUrl)),
                 ?_test(counter_property(BaseUrl)),
-                ?_test(search_property(BaseUrl))
+                ?_test(search_property(BaseUrl)),
+                ?_test(template_patch_property(BaseUrl))
             ]
         end}.
 
@@ -101,11 +104,33 @@ malformed_query_returns_sse_error({_Name, _BaseUrl, Port}) ->
           "data: signals {\"error\":\"invalid_query\"}\n\n">>
     )).
 
+template_safe_html_roundtrip({_Name, BaseUrl, _Port}) ->
+    {200, Headers, Body} = http_get(BaseUrl ++ "/template"),
+    ?assertEqual("text/html; charset=utf-8", header("content-type", Headers)),
+    ?assertMatch({_, _}, binary:match(Body, <<"id=\"template-page\"">>)),
+    ?assertMatch({_, _}, binary:match(Body, <<"data-on:click__prevent=\"@post(&#39;/template-patch&#39;)\"">>)),
+    ?assertMatch({_, _}, binary:match(Body, <<"data-bind:label">>)),
+    ?assertMatch({_, _}, binary:match(Body, <<"data-text=\"$label\"">>)),
+    ?assertMatch({_, _}, binary:match(Body, <<"aria-label=\"Dock\"">>)).
+
+template_patch_roundtrip({_Name, BaseUrl, _Port}) ->
+    {200, Headers, Body} = get_with_signals(BaseUrl ++ "/template-patch", #{<<"label">> => <<"Launch">>}),
+    ?assertEqual("text/event-stream", header("content-type", Headers)),
+    ?assertEqual(
+        <<"event: datastar-patch-elements\n"
+          "data: selector #template-widget\n"
+          "data: elements <button id=\"template-widget\" data-on:click__prevent=\"@post(&#39;/template-patch&#39;)\" data-bind:label data-text=\"$label\" aria-label=\"Launch\">Launch</button>\n\n">>,
+        Body
+    ).
+
 counter_property({_Name, BaseUrl, _Port}) ->
     ?assert(proper:quickcheck(prop_counter_roundtrip(BaseUrl), proper_opts())).
 
 search_property({_Name, BaseUrl, _Port}) ->
     ?assert(proper:quickcheck(prop_search_escapes_and_patches(BaseUrl), proper_opts())).
+
+template_patch_property({_Name, BaseUrl, _Port}) ->
+    ?assert(proper:quickcheck(prop_template_patch_escapes_and_patches(BaseUrl), proper_opts())).
 
 proper_opts() ->
     [{numtests, ?NUMTESTS}, {to_file, user}].
@@ -133,11 +158,28 @@ prop_search_escapes_and_patches(BaseUrl) ->
                 andalso Body =:= ExpectedBody
         end).
 
+prop_template_patch_escapes_and_patches(BaseUrl) ->
+    ?FORALL(Label, search_query(),
+        begin
+            {200, Headers, Body} = get_with_signals(BaseUrl ++ "/template-patch", #{<<"label">> => Label}),
+            ExpectedElement = expected_template_widget(Label),
+            ExpectedBody = <<"event: datastar-patch-elements\n"
+                             "data: selector #template-widget\n"
+                             "data: elements ", ExpectedElement/binary, "\n\n">>,
+            header("content-type", Headers) =:= "text/event-stream"
+                andalso Body =:= ExpectedBody
+        end).
+
 expected_search_element(<<>>) ->
     <<"<li data-empty>No query</li>">>;
 expected_search_element(Query) ->
     Escaped = space_cowboy_html:escape(Query),
     <<"<li id=\"result-primary\">", Escaped/binary, " Station</li>">>.
+
+expected_template_widget(Label) ->
+    Escaped = space_cowboy_html:escape(Label),
+    <<"<button id=\"template-widget\" data-on:click__prevent=\"@post(&#39;/template-patch&#39;)\" data-bind:label data-text=\"$label\" aria-label=\"",
+      Escaped/binary, "\">", Escaped/binary, "</button>">>.
 
 search_query() ->
     ?LET(Chars, list(search_char()), list_to_binary(Chars)).
