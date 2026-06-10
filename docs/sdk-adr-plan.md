@@ -59,7 +59,7 @@ Next adapter candidates:
 
 ## Compliance Tests
 
-Create golden tests from the ADR examples:
+Golden tests from the ADR examples now cover:
 
 - Event order: `event`, optional `id`, optional non-default `retry`, data lines, blank line.
 - `patch_elements` default elision.
@@ -69,6 +69,11 @@ Create golden tests from the ADR examples:
 - `patch_signals` JSON merge patch examples.
 - `execute_script` auto-remove behavior.
 - `read_signals` GET query and non-GET body behavior.
+
+Property tests also cover:
+
+- Map and proplist option parity, so Erlang, Elixir, Gleam, and other BEAM callers can use whichever shape is most natural.
+- Multiline `patch_signals` payload framing.
 
 ## Ergonomics
 

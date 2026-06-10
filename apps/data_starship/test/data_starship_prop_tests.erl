@@ -27,6 +27,12 @@ read_body_signals_property_test() ->
 execute_script_escapes_closing_script_property_test() ->
     ?assert(proper:quickcheck(prop_execute_script_escapes_closing_script(), proper_opts())).
 
+options_map_proplist_parity_property_test() ->
+    ?assert(proper:quickcheck(prop_options_map_proplist_parity(), proper_opts())).
+
+patch_signals_multiline_property_test() ->
+    ?assert(proper:quickcheck(prop_patch_signals_multiline(), proper_opts())).
+
 proper_opts() ->
     [{numtests, ?NUMTESTS}, {to_file, user}].
 
@@ -120,6 +126,32 @@ prop_execute_script_escapes_closing_script() ->
                 andalso has_line(Event, <<"data: mode append">>)
         end).
 
+prop_options_map_proplist_parity() ->
+    ?FORALL(Generated, {sse_line(), option_map(), signal_json(), script_attributes()},
+        begin
+            {Payload, Options0, Signals, Attributes} = Generated,
+            Options = Options0#{attributes => Attributes},
+            Proplist = maps:to_list(Options),
+            iolist_to_binary(data_starship:event(custom, [Payload], Options))
+                =:= iolist_to_binary(data_starship:event(custom, [Payload], Proplist))
+                andalso iolist_to_binary(data_starship:patch_elements(Payload, Options))
+                    =:= iolist_to_binary(data_starship:patch_elements(Payload, Proplist))
+                andalso iolist_to_binary(data_starship:patch_signals(Signals, Options))
+                    =:= iolist_to_binary(data_starship:patch_signals(Signals, Proplist))
+                andalso iolist_to_binary(data_starship:execute_script(Payload, Options))
+                    =:= iolist_to_binary(data_starship:execute_script(Payload, Proplist))
+        end).
+
+prop_patch_signals_multiline() ->
+    ?FORALL(Lines, non_empty(list(signal_json_line())),
+        begin
+            Signals = join_with_newlines(Lines),
+            Event = iolist_to_binary(data_starship:patch_signals(Signals)),
+            ExpectedDataLines = [<<"data: signals ", Line/binary>> || Line <- Lines],
+            Expected = join_event_lines([<<"event: datastar-patch-signals">> | ExpectedDataLines]),
+            Event =:= Expected
+        end).
+
 event_type() ->
     oneof([datastar_patch_elements, datastar_patch_signals, custom_event_name()]).
 
@@ -133,6 +165,35 @@ event_options() ->
             compact_options(#{
                 event_id => EventId,
                 retry_duration => RetryDuration
+            })
+        end).
+
+option_map() ->
+    ?LET(Generated,
+        {
+            maybe_gen(sse_line()),
+            retry_duration(),
+            maybe_gen(sse_line()),
+            patch_mode(),
+            namespace(),
+            boolean(),
+            maybe_gen(sse_line()),
+            boolean(),
+            boolean()
+        },
+        begin
+            {EventId, RetryDuration, Selector, Mode, Namespace, UseViewTransition,
+                ViewTransitionSelector, OnlyIfMissing, AutoRemove} = Generated,
+            compact_options(#{
+                event_id => EventId,
+                retry_duration => RetryDuration,
+                selector => Selector,
+                mode => Mode,
+                namespace => Namespace,
+                use_view_transition => UseViewTransition,
+                view_transition_selector => ViewTransitionSelector,
+                only_if_missing => OnlyIfMissing,
+                auto_remove => AutoRemove
             })
         end).
 
@@ -167,6 +228,24 @@ sse_line() ->
 
 sse_char() ->
     oneof(lists:seq(32, 126)).
+
+signal_json() ->
+    ?LET(Value, signal_json_line(), <<"{\"value\":\"", Value/binary, "\"}">>).
+
+signal_json_line() ->
+    ?LET(Chars, list(signal_json_char()), list_to_binary(Chars)).
+
+signal_json_char() ->
+    oneof(lists:seq(32, $!) ++ lists:seq($#, $[) ++ lists:seq($], 126)).
+
+script_attributes() ->
+    ?LET(Attrs, list(script_attribute()), Attrs).
+
+script_attribute() ->
+    ?LET(Chars, non_empty(list(attribute_char())), list_to_binary(Chars)).
+
+attribute_char() ->
+    oneof(lists:seq($a, $z) ++ lists:seq($A, $Z) ++ lists:seq($0, $9) ++ "-_=:\"'").
 
 maybe_gen(Generator) ->
     oneof([undefined, Generator]).
