@@ -60,8 +60,8 @@ The optional `quicer` dependency builds msquic and requires CMake. On macOS:
 brew install cmake
 ```
 
-The optional QUIC EUnit smoke opens UDP sockets and may need to run outside
-restricted sandboxes:
+The optional QUIC EUnit smoke opens UDP sockets and includes an HTTP/3 GET
+roundtrip. It may need to run outside restricted sandboxes:
 
 ```sh
 rebar3 as quic eunit

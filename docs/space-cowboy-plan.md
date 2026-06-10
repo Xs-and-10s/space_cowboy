@@ -114,6 +114,7 @@ Current spike shape:
 - `space_cowboy:quic_available/0` reports whether the optional `quicer` app is available.
 - Without QUIC support, `start_quic/2,3` returns `{error, quic_unavailable}` instead of crashing.
 - Cowboy 2.13 marks `cowboy:start_quic/3` experimental and requires Cowboy to be compiled with `COWBOY_QUICER` plus the `quicer` NIF.
+- The `quic` profile appends `COWBOY_QUICER` to Cowboy's compile flags and the optional test suite now verifies listener startup, QUIC handshake, and HTTP/3 GET route roundtrips.
 
 ## Next Implementation Milestones
 
