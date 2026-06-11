@@ -65,6 +65,10 @@ fn patch_signals(signals: String) -> Dynamic
 - Keep `apps/data_starship/src/data_starship.app.src` limited to `kernel` and
   `stdlib` runtime applications.
 - Keep ADR golden tests and property tests with the extracted package.
+- Move the BEAM usage examples that only depend on `data_starship`:
+  `examples/elixir_smoke.exs`, `examples/elixir_usage.exs`,
+  `examples/gleam_smoke/src/space_cowboy_gleam_smoke.gleam`, and
+  `examples/gleam_smoke/src/data_starship_usage.gleam`.
 - Move Cowboy-specific helpers to `space_cowboy` or another adapter package.
 - Decide the minimum OTP version before publishing. The current implementation
   uses OTP's built-in `json` module.

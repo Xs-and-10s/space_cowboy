@@ -42,6 +42,9 @@ Publication contents:
 - `apps/data_starship/src/data_starship.erl`
 - `apps/data_starship/src/data_starship.app.src`
 - `apps/data_starship/test/*`
+- `examples/elixir_smoke.exs`
+- `examples/elixir_usage.exs`
+- `examples/gleam_smoke` modules that only call `data_starship`
 - `docs/data-starship-api.md`
 - `docs/sdk-adr-plan.md`
 - `LICENSE`

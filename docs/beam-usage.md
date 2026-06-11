@@ -39,6 +39,9 @@ IO.puts(IO.iodata_to_binary(event))
 ```
 <!-- END: elixir-smoke -->
 
+For a broader example with golden-style output and property-style checks over
+options and signal parsing, see `examples/elixir_usage.exs`.
+
 ## Gleam
 
 Gleam can bind the same Erlang module with `@external`. When working from this
@@ -68,6 +71,10 @@ pub fn main() {
 }
 ```
 <!-- END: gleam-smoke -->
+
+For a broader example with golden-style output and property-style checks over
+signal event generation, see
+`examples/gleam_smoke/src/data_starship_usage.gleam`.
 
 ## Shared Contract
 
