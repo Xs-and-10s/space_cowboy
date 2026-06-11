@@ -17,13 +17,71 @@ web-server-neutral and should remain extractable as its own Hex package.
 sse_headers/0
 event/2
 event/3
+action/2
+action/3
+get/1
+get/2
+post/1
+post/2
+put/1
+put/2
+patch/1
+patch/2
+delete/1
+delete/2
 patch_elements/1
 patch_elements/2
+remove_elements/1
+remove_elements/2
 patch_signals/1
 patch_signals/2
+remove_signals/1
+remove_signals/2
 execute_script/1
 execute_script/2
+redirect/1
+redirect/2
+console_log/1
+console_log/2
 read_signals/3
+```
+
+## Convenience Helpers
+
+The core helpers stay web-server-neutral and return iodata:
+
+- `remove_elements/1,2` emits a `datastar-patch-elements` event with
+  `mode remove`.
+- `remove_signals/1,2` converts dot-notated paths such as
+  `<<"user.profile.theme">>` into nested JSON null patches.
+- `redirect/1,2` and `console_log/1,2` are script-patch helpers built on top of
+  `execute_script/1,2`.
+- `action/2,3` and the verb helpers `get/1,2`, `post/1,2`, `put/1,2`,
+  `patch/1,2`, and `delete/1,2` build Datastar frontend action expressions
+  such as `@post('/counter/increment')`.
+- HTML arguments may be raw iodata/binaries/strings or common safe wrappers
+  such as `{safe, Iodata}` and `{ok, Iodata}`.
+
+Options accept both the ADR-style keys already used by Data Starship and common
+Datastar package aliases where they do not change behavior:
+
+- `retry_duration` or `retry`
+- `use_view_transition` or `use_view_transitions`
+
+`execute_script/2` accepts either trusted attribute snippets:
+
+```erlang
+data_starship:execute_script(<<"run()">>, #{
+    attributes => [<<"type=\"module\"">>]
+}).
+```
+
+or an attribute map whose values are HTML-attribute escaped:
+
+```erlang
+data_starship:execute_script(<<"run()">>, #{
+    attributes => #{<<"type">> => <<"module">>}
+}).
 ```
 
 ## Dependency Snippets

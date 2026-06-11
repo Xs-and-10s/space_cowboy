@@ -24,6 +24,9 @@ read_get_signals_property_test() ->
 read_body_signals_property_test() ->
     ?assert(proper:quickcheck(prop_read_body_signals(), proper_opts())).
 
+read_delete_signals_property_test() ->
+    ?assert(proper:quickcheck(prop_read_delete_signals(), proper_opts())).
+
 execute_script_escapes_closing_script_property_test() ->
     ?assert(proper:quickcheck(prop_execute_script_escapes_closing_script(), proper_opts())).
 
@@ -32,6 +35,15 @@ options_map_proplist_parity_property_test() ->
 
 patch_signals_multiline_property_test() ->
     ?assert(proper:quickcheck(prop_patch_signals_multiline(), proper_opts())).
+
+remove_signals_paths_property_test() ->
+    ?assert(proper:quickcheck(prop_remove_signals_paths(), proper_opts())).
+
+action_path_escape_property_test() ->
+    ?assert(proper:quickcheck(prop_action_path_escape(), proper_opts())).
+
+script_attribute_map_escape_property_test() ->
+    ?assert(proper:quickcheck(prop_script_attribute_map_escape(), proper_opts())).
 
 proper_opts() ->
     [{numtests, ?NUMTESTS}, {to_file, user}].
@@ -114,6 +126,14 @@ prop_read_body_signals() ->
             data_starship:read_signals(Method, <<>>, Json) =:= {ok, Signals}
         end).
 
+prop_read_delete_signals() ->
+    ?FORALL(Signals, signal_map(),
+        begin
+            Json = iolist_to_binary(json:encode(Signals)),
+            Query = <<"datastar=", (percent_encode(Json))/binary>>,
+            data_starship:read_signals(delete, Query, <<"{\"ignored\":true}">>) =:= {ok, Signals}
+        end).
+
 prop_execute_script_escapes_closing_script() ->
     ?FORALL(Generated, {sse_line(), sse_line()},
         begin
@@ -150,6 +170,40 @@ prop_patch_signals_multiline() ->
             ExpectedDataLines = [<<"data: signals ", Line/binary>> || Line <- Lines],
             Expected = join_event_lines([<<"event: datastar-patch-signals">> | ExpectedDataLines]),
             Event =:= Expected
+        end).
+
+prop_remove_signals_paths() ->
+    ?FORALL(Paths, non_empty(list(signal_path())),
+        begin
+            Event = iolist_to_binary(data_starship:remove_signals(Paths)),
+            case extract_single_data_value(<<"signals">>, Event) of
+                {ok, Json} -> all_paths_null(json:decode(Json), Paths);
+                error -> false
+            end
+        end).
+
+prop_action_path_escape() ->
+    ?FORALL(Path, action_path(),
+        begin
+            Event = iolist_to_binary(data_starship:post(Path)),
+            Expected = iolist_to_binary([<<"@post(">>, js_single_quoted_expected(Path), <<")">>]),
+            Event =:= Expected
+                andalso binary:match(Event, <<"\n">>) =:= nomatch
+                andalso binary:match(Event, <<"\r">>) =:= nomatch
+        end).
+
+prop_script_attribute_map_escape() ->
+    ?FORALL(Value, attribute_value(),
+        begin
+            Event = iolist_to_binary(data_starship:execute_script(<<"run()">>, #{
+                attributes => #{<<"data-value">> => Value}
+            })),
+            Escaped = escape_html_attr_expected(Value),
+            has_fragment(Event, <<"data-value=\"", Escaped/binary, "\"">>)
+                andalso has_fragment(Event, <<"data-effect=\"el.remove()\"">>)
+                andalso binary:match(Escaped, <<"<">>) =:= nomatch
+                andalso binary:match(Escaped, <<">">>) =:= nomatch
+                andalso binary:match(Escaped, <<"\"">>) =:= nomatch
         end).
 
 event_type() ->
@@ -207,7 +261,7 @@ namespace() ->
     elements([html, svg, mathml]).
 
 non_get_method() ->
-    oneof([post, put, patch, delete, <<"POST">>, <<"PUT">>, <<"PATCH">>, <<"DELETE">>]).
+    oneof([post, put, patch, <<"POST">>, <<"PUT">>, <<"PATCH">>]).
 
 signal_map() ->
     ?LET(Pairs, list({signal_key(), signal_value()}), maps:from_list(Pairs)).
@@ -228,6 +282,22 @@ sse_line() ->
 
 sse_char() ->
     oneof(lists:seq(32, 126)).
+
+signal_path() ->
+    ?LET(Segments, non_empty(list(signal_path_segment())), join_path(Segments)).
+
+signal_path_segment() ->
+    ?LET(Chars, non_empty(list(elements("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"))),
+        list_to_binary(Chars)).
+
+action_path() ->
+    ?LET(Chars, list(action_path_char()), list_to_binary(Chars)).
+
+action_path_char() ->
+    oneof(lists:seq(32, 126) ++ [$\n, $\r]).
+
+attribute_value() ->
+    ?LET(Chars, list(oneof(lists:seq(32, 126))), list_to_binary(Chars)).
 
 signal_json() ->
     ?LET(Value, signal_json_line(), <<"{\"value\":\"", Value/binary, "\"}">>).
@@ -286,6 +356,9 @@ has_line(Event, Line) ->
     EventWithSentinels = <<"\n", Event/binary>>,
     binary:match(EventWithSentinels, Pattern) =/= nomatch.
 
+has_fragment(Event, Fragment) ->
+    binary:match(Event, Fragment) =/= nomatch.
+
 extract_single_data_value(Key, Event) ->
     Prefix = <<"data: ", Key/binary, " ">>,
     Lines = binary:split(Event, <<"\n">>, [global]),
@@ -319,3 +392,53 @@ hex_digit(N) when N < 10 ->
     $0 + N;
 hex_digit(N) ->
     $A + (N - 10).
+
+join_path([Segment]) ->
+    Segment;
+join_path([Segment | Segments]) ->
+    iolist_to_binary([Segment, <<".">>, join_path(Segments)]).
+
+all_paths_null(Map, Paths) ->
+    lists:all(fun(Path) -> path_value(Map, binary:split(Path, <<".">>, [global])) =:= null end, Paths).
+
+path_value(Value, []) ->
+    Value;
+path_value(Map, [Segment | Rest]) when is_map(Map) ->
+    path_value(maps:get(Segment, Map, missing), Rest);
+path_value(_Value, _Segments) ->
+    missing.
+
+js_single_quoted_expected(Value) ->
+    iolist_to_binary([<<"'">>, escape_js_single_quoted_expected(Value), <<"'">>]).
+
+escape_js_single_quoted_expected(Value) ->
+    escape_js_single_quoted_expected(Value, []).
+
+escape_js_single_quoted_expected(<<>>, Acc) ->
+    iolist_to_binary(lists:reverse(Acc));
+escape_js_single_quoted_expected(<<"\\", Rest/binary>>, Acc) ->
+    escape_js_single_quoted_expected(Rest, [<<"\\\\">> | Acc]);
+escape_js_single_quoted_expected(<<"'", Rest/binary>>, Acc) ->
+    escape_js_single_quoted_expected(Rest, [<<"\\'">> | Acc]);
+escape_js_single_quoted_expected(<<"\n", Rest/binary>>, Acc) ->
+    escape_js_single_quoted_expected(Rest, [<<"\\n">> | Acc]);
+escape_js_single_quoted_expected(<<"\r", Rest/binary>>, Acc) ->
+    escape_js_single_quoted_expected(Rest, [<<"\\r">> | Acc]);
+escape_js_single_quoted_expected(<<Byte, Rest/binary>>, Acc) ->
+    escape_js_single_quoted_expected(Rest, [<<Byte>> | Acc]).
+
+escape_html_attr_expected(Value) ->
+    escape_html_attr_expected(Value, []).
+
+escape_html_attr_expected(<<>>, Acc) ->
+    iolist_to_binary(lists:reverse(Acc));
+escape_html_attr_expected(<<"&", Rest/binary>>, Acc) ->
+    escape_html_attr_expected(Rest, [<<"&amp;">> | Acc]);
+escape_html_attr_expected(<<"\"", Rest/binary>>, Acc) ->
+    escape_html_attr_expected(Rest, [<<"&quot;">> | Acc]);
+escape_html_attr_expected(<<"<", Rest/binary>>, Acc) ->
+    escape_html_attr_expected(Rest, [<<"&lt;">> | Acc]);
+escape_html_attr_expected(<<">", Rest/binary>>, Acc) ->
+    escape_html_attr_expected(Rest, [<<"&gt;">> | Acc]);
+escape_html_attr_expected(<<Byte, Rest/binary>>, Acc) ->
+    escape_html_attr_expected(Rest, [<<Byte>> | Acc]).
