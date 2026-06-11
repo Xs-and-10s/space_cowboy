@@ -2,6 +2,9 @@
 
 The pure SDK should become a separate Hex package named `data_starship` unless naming changes before publication.
 
+The current public API and extraction checklist live in
+[`data-starship-api.md`](data-starship-api.md).
+
 ## Name
 
 `data_starship` is memorable, BEAM-friendly, and adjacent to Datastar without impersonating the upstream project. It also gives us module names that work from Erlang, Elixir, and Gleam:
@@ -93,3 +96,4 @@ The current scaffold uses OTP's built-in `json` module. Before Hex release, deci
 - older OTP support via optional `thoas`/`jsone`.
 
 For broad BEAM adoption, publish with `rebar3` metadata and document Elixir and Gleam dependency snippets.
+Initial dependency snippets are documented in `docs/data-starship-api.md`.
