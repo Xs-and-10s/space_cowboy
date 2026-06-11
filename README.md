@@ -54,6 +54,7 @@ start() ->
 
 - [BEAM usage guide](docs/beam-usage.md)
 - [Data Starship API and extraction checklist](docs/data-starship-api.md)
+- [Template Output In, Datastar Event Out](docs/templating.md)
 - [Release checklist](docs/release-checklist.md)
 - [Datastar 1.0 research notes](docs/datastar-1.0-research.md)
 - [ADR-compliant SDK plan](docs/sdk-adr-plan.md)

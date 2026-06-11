@@ -59,12 +59,23 @@ Gleam code can bind the Erlang module with `@external`:
 fn patch_signals(signals: String) -> Dynamic
 ```
 
+## Templates
+
+`data_starship` is template-engine-neutral. HEEx, Nakai, ErlyDTL, and other
+BEAM template libraries should render HTML first; then callers pass that
+rendered iodata, binary, or string to `data_starship:patch_elements/1,2`.
+
+See [Template Output In, Datastar Event Out](templating.md) for HEEx, Nakai,
+and ErlyDTL examples.
+
 ## Extraction Checklist
 
 - Keep `apps/data_starship/src/data_starship.erl` free of adapter references.
 - Keep `apps/data_starship/src/data_starship.app.src` limited to `kernel` and
   `stdlib` runtime applications.
 - Keep ADR golden tests and property tests with the extracted package.
+- Keep template examples as docs or optional examples, not runtime
+  dependencies of the SDK core.
 - Move the BEAM usage examples that only depend on `data_starship`:
   `examples/elixir_smoke.exs`, `examples/elixir_usage.exs`,
   `examples/gleam_smoke/src/space_cowboy_gleam_smoke.gleam`, and

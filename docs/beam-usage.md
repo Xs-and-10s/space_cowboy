@@ -86,3 +86,4 @@ For all BEAM languages:
 - Cowboy route helpers live in `space_cowboy`.
 - Template libraries only need to emit complete HTML fragments as iodata,
   strings, or common wrappers such as `{safe, Iodata}` / `{ok, Iodata}`.
+  See `docs/templating.md` for HEEx, Nakai, and ErlyDTL examples.
