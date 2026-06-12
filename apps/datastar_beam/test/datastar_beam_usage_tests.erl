@@ -1,4 +1,4 @@
--module(data_starship_beam_usage_tests).
+-module(datastar_beam_usage_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 -undef(LET).
@@ -17,7 +17,7 @@ elixir_usage_golden_test() ->
         false ->
             ok;
         Elixir ->
-            Output = run(Elixir, ["-pa", data_starship_ebin(), "examples/elixir_usage.exs"], "."),
+            Output = run(Elixir, ["-pa", datastar_beam_ebin(), "examples/elixir_usage.exs"], "."),
             ?assertEqual(expected_elixir_usage(), Output)
     end.
 
@@ -26,7 +26,7 @@ elixir_usage_sections_property_test() ->
         false ->
             ok;
         Elixir ->
-            Output = run(Elixir, ["-pa", data_starship_ebin(), "examples/elixir_usage.exs"], "."),
+            Output = run(Elixir, ["-pa", datastar_beam_ebin(), "examples/elixir_usage.exs"], "."),
             ?assert(proper:quickcheck(prop_usage_sections(Output, elixir_sections()), proper_opts()))
     end.
 
@@ -35,8 +35,8 @@ gleam_usage_golden_test() ->
         false ->
             ok;
         Gleam ->
-            Output = usage_output(run(Gleam, ["run", "-m", "data_starship_usage"], "examples/gleam_smoke", [
-                {"ERL_FLAGS", "-pa " ++ data_starship_ebin()}
+            Output = usage_output(run(Gleam, ["run", "-m", "datastar_beam_usage"], "examples/gleam_smoke", [
+                {"ERL_FLAGS", "-pa " ++ datastar_beam_ebin()}
             ])),
             ?assertEqual(expected_gleam_usage(), Output)
     end.
@@ -46,8 +46,8 @@ gleam_usage_sections_property_test() ->
         false ->
             ok;
         Gleam ->
-            Output = usage_output(run(Gleam, ["run", "-m", "data_starship_usage"], "examples/gleam_smoke", [
-                {"ERL_FLAGS", "-pa " ++ data_starship_ebin()}
+            Output = usage_output(run(Gleam, ["run", "-m", "datastar_beam_usage"], "examples/gleam_smoke", [
+                {"ERL_FLAGS", "-pa " ++ datastar_beam_ebin()}
             ])),
             ?assert(proper:quickcheck(prop_usage_sections(Output, gleam_sections()), proper_opts()))
     end.
@@ -58,10 +58,10 @@ prop_erlang_usage_roundtrip() ->
             Signals = #{<<"value">> => Value},
             Json = iolist_to_binary(json:encode(Signals)),
             Query = <<"datastar=", (percent_encode(Json))/binary>>,
-            Event = iolist_to_binary(data_starship:patch_signals(Signals)),
+            Event = iolist_to_binary(datastar_beam:patch_signals(Signals)),
             ExpectedEvent = <<"event: datastar-patch-signals\n"
                               "data: signals ", Json/binary, "\n\n">>,
-            data_starship:read_signals(get, Query, <<>>) =:= {ok, Signals}
+            datastar_beam:read_signals(get, Query, <<>>) =:= {ok, Signals}
                 andalso Event =:= ExpectedEvent
         end).
 
@@ -77,18 +77,18 @@ proper_opts() ->
 
 erlang_usage() ->
     [
-        {"patch-elements", iolist_to_binary(data_starship:patch_elements(
+        {"patch-elements", iolist_to_binary(datastar_beam:patch_elements(
             <<"<section id=\"panel\">Hello from Erlang</section>">>,
             #{selector => <<"#panel">>, mode => inner}
         ))},
-        {"patch-signals", iolist_to_binary(data_starship:patch_signals(
+        {"patch-signals", iolist_to_binary(datastar_beam:patch_signals(
             <<"{\"message\":\"Hello from Erlang\",\"count\":3}">>
         ))},
-        {"execute-script", iolist_to_binary(data_starship:execute_script(
+        {"execute-script", iolist_to_binary(datastar_beam:execute_script(
             <<"window.erlangReady = true;</script>">>
         ))},
         {"read-signals", begin
-            {ok, Signals} = data_starship:read_signals(
+            {ok, Signals} = datastar_beam:read_signals(
                 <<"GET">>,
                 <<"datastar=%7B%22count%22%3A3%2C%22message%22%3A%22Launch%22%7D">>,
                 <<>>
@@ -192,8 +192,8 @@ executable(Name) ->
         Path -> Path
     end.
 
-data_starship_ebin() ->
-    filename:dirname(code:which(data_starship)).
+datastar_beam_ebin() ->
+    filename:dirname(code:which(datastar_beam)).
 
 run(Command, Args, Cwd) ->
     run(Command, Args, Cwd, []).

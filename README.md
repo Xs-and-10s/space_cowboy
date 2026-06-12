@@ -5,7 +5,7 @@ and any other BEAM language.
 
 This repository currently contains two OTP applications:
 
-- `data_starship`: a portable Erlang Datastar SDK core that emits ADR-shaped
+- `datastar_beam`: a portable Erlang Datastar SDK core that emits ADR-shaped
   SSE events as iodata and parses incoming Datastar signals.
 - `space_cowboy`: a Cowboy adapter and mini-framework layer that treats
   Datastar and Server-Sent Events as the happy path.
@@ -20,7 +20,7 @@ be published later as its own Hex package.
 ```erlang
 ping(_Req) ->
     {sse, [
-        data_starship:patch_signals(#{<<"message">> => <<"Hello from Erlang">>})
+        datastar_beam:patch_signals(#{<<"message">> => <<"Hello from Erlang">>})
     ]}.
 ```
 
@@ -53,7 +53,7 @@ start() ->
 ## Research And Plan
 
 - [BEAM usage guide](docs/beam-usage.md)
-- [Data Starship API and extraction checklist](docs/data-starship-api.md)
+- [Datastar Beam API and extraction checklist](docs/datastar-beam-api.md)
 - [Template Output In, Datastar Event Out](docs/templating.md)
 - [Release checklist](docs/release-checklist.md)
 - [Datastar 1.0 research notes](docs/datastar-1.0-research.md)

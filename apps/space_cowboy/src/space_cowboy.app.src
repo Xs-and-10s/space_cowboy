@@ -3,7 +3,7 @@
     {vsn, "0.1.0"},
     {registered, []},
     {mod, {space_cowboy_app, []}},
-    {applications, [kernel, stdlib, cowboy, ranch, data_starship]},
+    {applications, [kernel, stdlib, cowboy, ranch, datastar_beam]},
     {env, []},
     {modules, []},
     {licenses, ["MIT"]},

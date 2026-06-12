@@ -6,7 +6,7 @@ Space Cowboy should be a Datastar-first Cowboy mini-framework, not a replacement
 
 - Datastar SSE is the happy path.
 - Ordinary Cowboy handlers and routes still work.
-- The pure SDK remains extractable as `data_starship`.
+- The pure SDK remains extractable as `datastar_beam`.
 - Elixir and Gleam users can consume the Erlang modules directly.
 - Pro users can opt into Rocket, Inspector, and Stellar without license leakage.
 
@@ -26,13 +26,13 @@ start() ->
 Elixir can call the same modules directly:
 
 ```elixir
-:data_starship.patch_signals(%{"message" => "Hello from Elixir"})
+:datastar_beam.patch_signals(%{"message" => "Hello from Elixir"})
 ```
 
 Gleam can bind the Erlang module with an external:
 
 ```gleam
-@external(erlang, "data_starship", "patch_signals")
+@external(erlang, "datastar_beam", "patch_signals")
 fn patch_signals(signals: String) -> Dynamic
 ```
 
@@ -76,7 +76,7 @@ Recommended layers:
 
 - Raw iodata helpers for Erlang examples and tests.
 - Adapters/examples for popular BEAM templating:
-  - Elixir: HEEx/Phoenix components can output binaries consumed by `data_starship`.
+  - Elixir: HEEx/Phoenix components can output binaries consumed by `datastar_beam`.
   - Gleam: Lustre or Nakai-style typed views can output strings/iodata.
   - Erlang: ErlyDTL, Nitrogen/Nitro, or simple iodata.
 - Optional `space_cowboy_html` helpers for escaping and attribute generation.
@@ -137,7 +137,7 @@ Current spike shape:
 
 ## Next Implementation Milestones
 
-1. Split `data_starship` into its own repository/package.
+1. Split `datastar_beam` into its own repository/package.
 2. Fill ADR golden tests.
 3. Add richer long-lived SSE examples using the Cowboy loop handler.
 4. Expand the basic example into active search, click-to-edit, POST-backed save, and progress streaming.

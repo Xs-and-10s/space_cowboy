@@ -1,4 +1,4 @@
--module(data_starship_prop_tests).
+-module(datastar_beam_prop_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 -undef(LET).
@@ -52,7 +52,7 @@ prop_event_framing() ->
     ?FORALL(Generated, {event_type(), list(sse_line()), event_options()},
         begin
             {EventType, Lines, Options} = Generated,
-            Event = iolist_to_binary(data_starship:event(EventType, Lines, Options)),
+            Event = iolist_to_binary(datastar_beam:event(EventType, Lines, Options)),
             BinaryEventType = event_type_to_binary(EventType),
             ExpectedLines = [
                 <<"event: ", BinaryEventType/binary>>,
@@ -70,7 +70,7 @@ prop_patch_elements_multiline() ->
     ?FORALL(Lines, non_empty(list(sse_line())),
         begin
             Elements = join_with_newlines(Lines),
-            Event = iolist_to_binary(data_starship:patch_elements(Elements)),
+            Event = iolist_to_binary(datastar_beam:patch_elements(Elements)),
             ExpectedDataLines = [<<"data: elements ", Line/binary>> || Line <- Lines],
             Expected = join_event_lines([<<"event: datastar-patch-elements">> | ExpectedDataLines]),
             Event =:= Expected
@@ -88,7 +88,7 @@ prop_patch_elements_option_elision() ->
                 use_view_transition => UseViewTransition,
                 view_transition_selector => ViewTransitionSelector
             }),
-            Event = iolist_to_binary(data_starship:patch_elements(Elements, Options)),
+            Event = iolist_to_binary(datastar_beam:patch_elements(Elements, Options)),
             has_line(Event, <<"data: elements ", Elements/binary>>)
                 andalso (Selector =:= undefined orelse has_line(Event, <<"data: selector ", Selector/binary>>))
                 andalso (Mode =:= outer orelse has_line(Event, <<"data: mode ", (atom_to_binary(Mode))/binary>>))
@@ -103,7 +103,7 @@ prop_patch_elements_option_elision() ->
 prop_patch_signals_map_roundtrip() ->
     ?FORALL(Signals, signal_map(),
         begin
-            Event = iolist_to_binary(data_starship:patch_signals(Signals)),
+            Event = iolist_to_binary(datastar_beam:patch_signals(Signals)),
             case extract_single_data_value(<<"signals">>, Event) of
                 {ok, Json} -> json:decode(Json) =:= Signals;
                 error -> false
@@ -115,7 +115,7 @@ prop_read_get_signals() ->
         begin
             Json = iolist_to_binary(json:encode(Signals)),
             Query = <<"x=1&datastar=", (percent_encode(Json))/binary, "&y=2">>,
-            data_starship:read_signals(get, Query, <<>>) =:= {ok, Signals}
+            datastar_beam:read_signals(get, Query, <<>>) =:= {ok, Signals}
         end).
 
 prop_read_body_signals() ->
@@ -123,7 +123,7 @@ prop_read_body_signals() ->
         begin
             {Method, Signals} = Generated,
             Json = iolist_to_binary(json:encode(Signals)),
-            data_starship:read_signals(Method, <<>>, Json) =:= {ok, Signals}
+            datastar_beam:read_signals(Method, <<>>, Json) =:= {ok, Signals}
         end).
 
 prop_read_delete_signals() ->
@@ -131,7 +131,7 @@ prop_read_delete_signals() ->
         begin
             Json = iolist_to_binary(json:encode(Signals)),
             Query = <<"datastar=", (percent_encode(Json))/binary>>,
-            data_starship:read_signals(delete, Query, <<"{\"ignored\":true}">>) =:= {ok, Signals}
+            datastar_beam:read_signals(delete, Query, <<"{\"ignored\":true}">>) =:= {ok, Signals}
         end).
 
 prop_execute_script_escapes_closing_script() ->
@@ -139,7 +139,7 @@ prop_execute_script_escapes_closing_script() ->
         begin
             {Prefix, Suffix} = Generated,
             Script = <<Prefix/binary, "</script>", Suffix/binary>>,
-            Event = iolist_to_binary(data_starship:execute_script(Script)),
+            Event = iolist_to_binary(datastar_beam:execute_script(Script)),
             length(binary:matches(Event, <<"</script>">>)) =:= 1
                 andalso binary:match(Event, <<"<\\/script>">>) =/= nomatch
                 andalso has_line(Event, <<"data: selector body">>)
@@ -152,21 +152,21 @@ prop_options_map_proplist_parity() ->
             {Payload, Options0, Signals, Attributes} = Generated,
             Options = Options0#{attributes => Attributes},
             Proplist = maps:to_list(Options),
-            iolist_to_binary(data_starship:event(custom, [Payload], Options))
-                =:= iolist_to_binary(data_starship:event(custom, [Payload], Proplist))
-                andalso iolist_to_binary(data_starship:patch_elements(Payload, Options))
-                    =:= iolist_to_binary(data_starship:patch_elements(Payload, Proplist))
-                andalso iolist_to_binary(data_starship:patch_signals(Signals, Options))
-                    =:= iolist_to_binary(data_starship:patch_signals(Signals, Proplist))
-                andalso iolist_to_binary(data_starship:execute_script(Payload, Options))
-                    =:= iolist_to_binary(data_starship:execute_script(Payload, Proplist))
+            iolist_to_binary(datastar_beam:event(custom, [Payload], Options))
+                =:= iolist_to_binary(datastar_beam:event(custom, [Payload], Proplist))
+                andalso iolist_to_binary(datastar_beam:patch_elements(Payload, Options))
+                    =:= iolist_to_binary(datastar_beam:patch_elements(Payload, Proplist))
+                andalso iolist_to_binary(datastar_beam:patch_signals(Signals, Options))
+                    =:= iolist_to_binary(datastar_beam:patch_signals(Signals, Proplist))
+                andalso iolist_to_binary(datastar_beam:execute_script(Payload, Options))
+                    =:= iolist_to_binary(datastar_beam:execute_script(Payload, Proplist))
         end).
 
 prop_patch_signals_multiline() ->
     ?FORALL(Lines, non_empty(list(signal_json_line())),
         begin
             Signals = join_with_newlines(Lines),
-            Event = iolist_to_binary(data_starship:patch_signals(Signals)),
+            Event = iolist_to_binary(datastar_beam:patch_signals(Signals)),
             ExpectedDataLines = [<<"data: signals ", Line/binary>> || Line <- Lines],
             Expected = join_event_lines([<<"event: datastar-patch-signals">> | ExpectedDataLines]),
             Event =:= Expected
@@ -175,7 +175,7 @@ prop_patch_signals_multiline() ->
 prop_remove_signals_paths() ->
     ?FORALL(Paths, non_empty(list(signal_path())),
         begin
-            Event = iolist_to_binary(data_starship:remove_signals(Paths)),
+            Event = iolist_to_binary(datastar_beam:remove_signals(Paths)),
             case extract_single_data_value(<<"signals">>, Event) of
                 {ok, Json} -> all_paths_null(json:decode(Json), Paths);
                 error -> false
@@ -185,7 +185,7 @@ prop_remove_signals_paths() ->
 prop_action_path_escape() ->
     ?FORALL(Path, action_path(),
         begin
-            Event = iolist_to_binary(data_starship:post(Path)),
+            Event = iolist_to_binary(datastar_beam:post(Path)),
             Expected = iolist_to_binary([<<"@post(">>, js_single_quoted_expected(Path), <<")">>]),
             Event =:= Expected
                 andalso binary:match(Event, <<"\n">>) =:= nomatch
@@ -195,7 +195,7 @@ prop_action_path_escape() ->
 prop_script_attribute_map_escape() ->
     ?FORALL(Value, attribute_value(),
         begin
-            Event = iolist_to_binary(data_starship:execute_script(<<"run()">>, #{
+            Event = iolist_to_binary(datastar_beam:execute_script(<<"run()">>, #{
                 attributes => #{<<"data-value">> => Value}
             })),
             Escaped = escape_html_attr_expected(Value),

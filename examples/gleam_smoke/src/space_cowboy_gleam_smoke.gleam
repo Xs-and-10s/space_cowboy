@@ -1,7 +1,7 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/io
 
-@external(erlang, "data_starship", "patch_signals")
+@external(erlang, "datastar_beam", "patch_signals")
 fn patch_signals(signals: String) -> Dynamic
 
 @external(erlang, "erlang", "iolist_to_binary")

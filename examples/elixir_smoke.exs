@@ -1,5 +1,5 @@
 event =
-  :data_starship.patch_signals(%{
+  :datastar_beam.patch_signals(%{
     "message" => "Hello from Elixir"
   })
 

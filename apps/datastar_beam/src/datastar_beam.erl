@@ -3,7 +3,7 @@
 %% This module intentionally knows nothing about Cowboy, Plug, Mist, Elli,
 %% or any other web server. It only knows how to produce Datastar-compliant
 %% SSE event bytes and parse incoming Datastar signals.
--module(data_starship).
+-module(datastar_beam).
 
 -compile({no_auto_import, [get/1, put/2]}).
 

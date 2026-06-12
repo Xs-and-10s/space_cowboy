@@ -1,4 +1,4 @@
-{application, data_starship, [
+{application, datastar_beam, [
     {description, "Portable Erlang SDK core for Datastar Server-Sent Events"},
     {vsn, "0.1.0"},
     {registered, []},

@@ -1,6 +1,6 @@
-# Data Starship API
+# Datastar Beam API
 
-`data_starship` is the portable Erlang Datastar SDK core. It is intentionally
+`datastar_beam` is the portable Erlang Datastar SDK core. It is intentionally
 web-server-neutral and should remain extractable as its own Hex package.
 
 ## Package Boundary
@@ -62,7 +62,7 @@ The core helpers stay web-server-neutral and return iodata:
 - HTML arguments may be raw iodata/binaries/strings or common safe wrappers
   such as `{safe, Iodata}` and `{ok, Iodata}`.
 
-Options accept both the ADR-style keys already used by Data Starship and common
+Options accept both the ADR-style keys already used by Datastar Beam and common
 Datastar package aliases where they do not change behavior:
 
 - `retry_duration` or `retry`
@@ -71,7 +71,7 @@ Datastar package aliases where they do not change behavior:
 `execute_script/2` accepts either trusted attribute snippets:
 
 ```erlang
-data_starship:execute_script(<<"run()">>, #{
+datastar_beam:execute_script(<<"run()">>, #{
     attributes => [<<"type=\"module\"">>]
 }).
 ```
@@ -79,7 +79,7 @@ data_starship:execute_script(<<"run()">>, #{
 or an attribute map whose values are HTML-attribute escaped:
 
 ```erlang
-data_starship:execute_script(<<"run()">>, #{
+datastar_beam:execute_script(<<"run()">>, #{
     attributes => #{<<"type">> => <<"module">>}
 }).
 ```
@@ -90,7 +90,7 @@ Rebar3:
 
 ```erlang
 {deps, [
-    {data_starship, "0.1.0"}
+    {datastar_beam, "0.1.0"}
 ]}.
 ```
 
@@ -99,7 +99,7 @@ Mix:
 ```elixir
 def deps do
   [
-    {:data_starship, "~> 0.1.0"}
+    {:datastar_beam, "~> 0.1.0"}
   ]
 end
 ```
@@ -107,37 +107,37 @@ end
 Gleam:
 
 ```sh
-gleam add data_starship
+gleam add datastar_beam
 ```
 
 Gleam code can bind the Erlang module with `@external`:
 
 ```gleam
-@external(erlang, "data_starship", "patch_signals")
+@external(erlang, "datastar_beam", "patch_signals")
 fn patch_signals(signals: String) -> Dynamic
 ```
 
 ## Templates
 
-`data_starship` is template-engine-neutral. HEEx, Nakai, ErlyDTL, and other
+`datastar_beam` is template-engine-neutral. HEEx, Nakai, ErlyDTL, and other
 BEAM template libraries should render HTML first; then callers pass that
-rendered iodata, binary, or string to `data_starship:patch_elements/1,2`.
+rendered iodata, binary, or string to `datastar_beam:patch_elements/1,2`.
 
 See [Template Output In, Datastar Event Out](templating.md) for HEEx, Nakai,
 and ErlyDTL examples.
 
 ## Extraction Checklist
 
-- Keep `apps/data_starship/src/data_starship.erl` free of adapter references.
-- Keep `apps/data_starship/src/data_starship.app.src` limited to `kernel` and
+- Keep `apps/datastar_beam/src/datastar_beam.erl` free of adapter references.
+- Keep `apps/datastar_beam/src/datastar_beam.app.src` limited to `kernel` and
   `stdlib` runtime applications.
 - Keep ADR golden tests and property tests with the extracted package.
 - Keep template examples as docs or optional examples, not runtime
   dependencies of the SDK core.
-- Move the BEAM usage examples that only depend on `data_starship`:
+- Move the BEAM usage examples that only depend on `datastar_beam`:
   `examples/elixir_smoke.exs`, `examples/elixir_usage.exs`,
   `examples/gleam_smoke/src/space_cowboy_gleam_smoke.gleam`, and
-  `examples/gleam_smoke/src/data_starship_usage.gleam`.
+  `examples/gleam_smoke/src/datastar_beam_usage.gleam`.
 - Move Cowboy-specific helpers to `space_cowboy` or another adapter package.
 - Decide the minimum OTP version before publishing. The current implementation
   uses OTP's built-in `json` module.

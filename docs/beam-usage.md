@@ -6,7 +6,7 @@ BEAM languages can call the same modules.
 ## Erlang
 
 ```erlang
-Event = data_starship:patch_signals(#{<<"message">> => <<"Hello from Erlang">>}),
+Event = datastar_beam:patch_signals(#{<<"message">> => <<"Hello from Erlang">>}),
 io:put_chars(iolist_to_binary(Event)).
 ```
 
@@ -15,23 +15,23 @@ Cowboy routes can use the higher-level `space_cowboy` return values:
 ```erlang
 ping(_Req) ->
     {sse, [
-        data_starship:patch_signals(#{<<"message">> => <<"Hello from Erlang">>})
+        datastar_beam:patch_signals(#{<<"message">> => <<"Hello from Erlang">>})
     ]}.
 ```
 
 ## Elixir
 
 Elixir can call the Erlang module directly. When working from this repository,
-the smoke script can run against the compiled `data_starship` beam files:
+the smoke script can run against the compiled `datastar_beam` beam files:
 
 ```sh
-elixir -pa _build/default/lib/data_starship/ebin examples/elixir_smoke.exs
+elixir -pa _build/default/lib/datastar_beam/ebin examples/elixir_smoke.exs
 ```
 
 <!-- BEGIN: elixir-smoke -->
 ```elixir
 event =
-  :data_starship.patch_signals(%{
+  :datastar_beam.patch_signals(%{
     "message" => "Hello from Elixir"
   })
 
@@ -46,11 +46,11 @@ options and signal parsing, see `examples/elixir_usage.exs`.
 
 Gleam can bind the same Erlang module with `@external`. When working from this
 repository, the smoke project can run with `ERL_FLAGS` pointing at the compiled
-`data_starship` beam files:
+`datastar_beam` beam files:
 
 ```sh
 cd examples/gleam_smoke
-ERL_FLAGS='-pa ../../_build/default/lib/data_starship/ebin' gleam run
+ERL_FLAGS='-pa ../../_build/default/lib/datastar_beam/ebin' gleam run
 ```
 
 <!-- BEGIN: gleam-smoke -->
@@ -58,7 +58,7 @@ ERL_FLAGS='-pa ../../_build/default/lib/data_starship/ebin' gleam run
 import gleam/dynamic.{type Dynamic}
 import gleam/io
 
-@external(erlang, "data_starship", "patch_signals")
+@external(erlang, "datastar_beam", "patch_signals")
 fn patch_signals(signals: String) -> Dynamic
 
 @external(erlang, "erlang", "iolist_to_binary")
@@ -74,7 +74,7 @@ pub fn main() {
 
 For a broader example with golden-style output and property-style checks over
 signal event generation, see
-`examples/gleam_smoke/src/data_starship_usage.gleam`.
+`examples/gleam_smoke/src/datastar_beam_usage.gleam`.
 
 ## Shared Contract
 
@@ -82,7 +82,7 @@ For all BEAM languages:
 
 - SDK functions return iodata.
 - Options can be maps or proplists.
-- Web-server-neutral functions live in `data_starship`.
+- Web-server-neutral functions live in `datastar_beam`.
 - Cowboy route helpers live in `space_cowboy`.
 - Template libraries only need to emit complete HTML fragments as iodata,
   strings, or common wrappers such as `{safe, Iodata}` / `{ok, Iodata}`.

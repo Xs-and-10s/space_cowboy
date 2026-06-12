@@ -242,7 +242,7 @@ path_segment() ->
     ?LET(Chars, non_empty(list(path_char())), list_to_binary(Chars)).
 
 path_char() ->
-    oneof(lists:seq($0, $9) ++ lists:seq($A, $Z) ++ lists:seq($a, $z) ++ "-_.~").
+    oneof(lists:seq($0, $9) ++ lists:seq($A, $Z) ++ lists:seq($a, $z) ++ "-_~").
 
 search_query() ->
     ?LET(Chars, list(search_char()), list_to_binary(Chars)).

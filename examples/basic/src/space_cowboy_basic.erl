@@ -65,14 +65,14 @@ home(_Req) ->
 
 ping(_Req) ->
     {sse, [
-        data_starship:patch_signals(#{<<"message">> => <<"Datastar over Cowboy SSE">>})
+        datastar_beam:patch_signals(#{<<"message">> => <<"Datastar over Cowboy SSE">>})
     ]}.
 
 search(Req) ->
     Signals = signals_or_empty(Req),
     Query = maps:get(<<"query">>, Signals, <<>>),
     {sse, [
-        data_starship:patch_elements(search_results(Query), #{
+        datastar_beam:patch_elements(search_results(Query), #{
             selector => <<"#results">>,
             mode => inner
         })
@@ -80,7 +80,7 @@ search(Req) ->
 
 edit_title(_Req) ->
     {sse, [
-        data_starship:patch_elements(title_editor(<<"Docking Checklist">>), #{
+        datastar_beam:patch_elements(title_editor(<<"Docking Checklist">>), #{
             selector => <<"#editor">>,
             mode => inner
         })
@@ -90,8 +90,8 @@ save_title(Req) ->
     Signals = signals_or_empty(Req),
     Title = maps:get(<<"title">>, Signals, <<"Docking Checklist">>),
     {sse, [
-        data_starship:patch_signals(#{<<"title">> => Title}),
-        data_starship:patch_elements(title_display(Title), #{
+        datastar_beam:patch_signals(#{<<"title">> => Title}),
+        datastar_beam:patch_elements(title_display(Title), #{
             selector => <<"#editor">>,
             mode => inner
         })

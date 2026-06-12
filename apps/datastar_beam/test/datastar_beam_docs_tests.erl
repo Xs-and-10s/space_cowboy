@@ -1,11 +1,11 @@
--module(data_starship_docs_tests).
+-module(datastar_beam_docs_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 -undef(LET).
 -include_lib("proper/include/proper.hrl").
 
 -define(NUMTESTS, 25).
--define(API_DOC, "docs/data-starship-api.md").
+-define(API_DOC, "docs/datastar-beam-api.md").
 -define(TEMPLATING_DOC, "docs/templating.md").
 
 templating_doc_is_linked_from_api_golden_test() ->
@@ -15,7 +15,7 @@ templating_doc_is_linked_from_api_golden_test() ->
 templating_doc_states_core_contract_golden_test() ->
     {ok, Doc} = file:read_file(?TEMPLATING_DOC),
     ?assertMatch({_, _}, binary:match(Doc, <<"Template engines own escaping">>)),
-    ?assertMatch({_, _}, binary:match(Doc, <<"data_starship:patch_elements/1,2">>)),
+    ?assertMatch({_, _}, binary:match(Doc, <<"datastar_beam:patch_elements/1,2">>)),
     ?assertMatch({_, _}, binary:match(Doc, <<"does not take dependencies">>)).
 
 templating_doc_covers_expected_engines_golden_test() ->

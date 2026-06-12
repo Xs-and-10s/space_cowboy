@@ -1,17 +1,17 @@
 # ADR-Compliant SDK Plan
 
-The pure SDK should become a separate Hex package named `data_starship` unless naming changes before publication.
+The pure SDK should become a separate Hex package named `datastar_beam` unless naming changes before publication.
 
 The current public API and extraction checklist live in
-[`data-starship-api.md`](data-starship-api.md).
+[`datastar-beam-api.md`](datastar-beam-api.md).
 
 ## Name
 
-`data_starship` is memorable, BEAM-friendly, and adjacent to Datastar without impersonating the upstream project. It also gives us module names that work from Erlang, Elixir, and Gleam:
+`datastar_beam` is memorable, BEAM-friendly, and adjacent to Datastar without impersonating the upstream project. It also gives us module names that work from Erlang, Elixir, and Gleam:
 
-- Erlang: `data_starship:patch_elements(Html).`
-- Elixir: `:data_starship.patch_elements(html)`
-- Gleam: external functions targeting `data_starship`.
+- Erlang: `datastar_beam:patch_elements(Html).`
+- Elixir: `:datastar_beam.patch_elements(html)`
+- Gleam: external functions targeting `datastar_beam`.
 
 Alternatives worth reserving/checking before release:
 
@@ -37,7 +37,7 @@ The core package should stay web-server-neutral and return iodata. Adapters shou
 Use maps or proplists so every BEAM language can call the same functions:
 
 ```erlang
-data_starship:patch_elements(Html, #{
+datastar_beam:patch_elements(Html, #{
     selector => <<"#feed">>,
     mode => append,
     event_id => <<"42">>,
@@ -56,9 +56,9 @@ data_starship:patch_elements(Html, #{
 
 Next adapter candidates:
 
-- `data_starship_plug` for Elixir Plug/Phoenix.
-- `data_starship_mist` for Gleam/Mist.
-- `data_starship_elli` for pure Erlang/Elli.
+- `datastar_beam_plug` for Elixir Plug/Phoenix.
+- `datastar_beam_mist` for Gleam/Mist.
+- `datastar_beam_elli` for pure Erlang/Elli.
 
 ## Compliance Tests
 
@@ -96,4 +96,4 @@ The current scaffold uses OTP's built-in `json` module. Before Hex release, deci
 - older OTP support via optional `thoas`/`jsone`.
 
 For broad BEAM adoption, publish with `rebar3` metadata and document Elixir and Gleam dependency snippets.
-Initial dependency snippets are documented in `docs/data-starship-api.md`.
+Initial dependency snippets are documented in `docs/datastar-beam-api.md`.

@@ -7,7 +7,7 @@
 -define(NUMTESTS, 25).
 
 app_metadata_golden_test() ->
-    DataStarship = app(data_starship),
+    DataStarship = app(datastar_beam),
     SpaceCowboy = app(space_cowboy),
     ?assertEqual("0.1.0", prop(vsn, DataStarship)),
     ?assertEqual("0.1.0", prop(vsn, SpaceCowboy)),
@@ -17,20 +17,20 @@ app_metadata_golden_test() ->
     ?assertMatch([{"GitHub", "https://github.com/xs-and-10s/space_cowboy"}], prop(links, SpaceCowboy)).
 
 runtime_dependencies_golden_test() ->
-    ?assertEqual([kernel, stdlib], prop(applications, app(data_starship))),
+    ?assertEqual([kernel, stdlib], prop(applications, app(datastar_beam))),
     SpaceCowboyApps = prop(applications, app(space_cowboy)),
     ?assert(lists:member(kernel, SpaceCowboyApps)),
     ?assert(lists:member(stdlib, SpaceCowboyApps)),
     ?assert(lists:member(cowboy, SpaceCowboyApps)),
     ?assert(lists:member(ranch, SpaceCowboyApps)),
-    ?assert(lists:member(data_starship, SpaceCowboyApps)).
+    ?assert(lists:member(datastar_beam, SpaceCowboyApps)).
 
 release_checklist_mentions_publish_boundaries_golden_test() ->
     {ok, Checklist} = file:read_file("docs/release-checklist.md"),
     lists:foreach(fun(Expected) ->
         ?assertMatch({_, _}, binary:match(Checklist, Expected))
     end, [
-        <<"data_starship">>,
+        <<"datastar_beam">>,
         <<"space_cowboy">>,
         <<".local/">>,
         <<"Datastar Pro">>,
@@ -54,7 +54,7 @@ metadata_property_test() ->
     ?assert(proper:quickcheck(prop_app_metadata_is_publishable(), proper_opts())).
 
 prop_app_metadata_is_publishable() ->
-    ?FORALL(AppName, elements([data_starship, space_cowboy]),
+    ?FORALL(AppName, elements([datastar_beam, space_cowboy]),
         begin
             Props = app(AppName),
             is_non_empty_string(prop(description, Props))
@@ -67,8 +67,8 @@ prop_app_metadata_is_publishable() ->
 proper_opts() ->
     [{numtests, ?NUMTESTS}, {to_file, user}].
 
-app(data_starship) ->
-    app_props("apps/data_starship/src/data_starship.app.src", data_starship);
+app(datastar_beam) ->
+    app_props("apps/datastar_beam/src/datastar_beam.app.src", datastar_beam);
 app(space_cowboy) ->
     app_props("apps/space_cowboy/src/space_cowboy.app.src", space_cowboy).
 

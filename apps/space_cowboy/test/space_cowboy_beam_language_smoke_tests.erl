@@ -12,7 +12,7 @@ elixir_smoke_test() ->
                   "data: signals {\"message\":\"Hello from Elixir\"}\n\n\n">>,
             ?assertEqual(Expected, event_output(run(Elixir, [
                 "-pa",
-                data_starship_ebin(),
+                datastar_beam_ebin(),
                 "examples/elixir_smoke.exs"
             ], ".")))
     end.
@@ -26,7 +26,7 @@ gleam_smoke_test() ->
                 <<"event: datastar-patch-signals\n"
                   "data: signals {\"message\":\"Hello from Gleam\"}\n\n\n">>,
             ?assertEqual(Expected, event_output(run(Gleam, ["run"], "examples/gleam_smoke", [
-                {"ERL_FLAGS", "-pa " ++ data_starship_ebin()}
+                {"ERL_FLAGS", "-pa " ++ datastar_beam_ebin()}
             ])))
     end.
 
@@ -36,8 +36,8 @@ executable(Name) ->
         Path -> Path
     end.
 
-data_starship_ebin() ->
-    filename:dirname(code:which(data_starship)).
+datastar_beam_ebin() ->
+    filename:dirname(code:which(datastar_beam)).
 
 run(Command, Args, Cwd) ->
     run(Command, Args, Cwd, []).

@@ -2,13 +2,13 @@
 
 This repository is the development umbrella for two publishable pieces:
 
-- `data_starship`: portable, web-server-neutral Datastar SDK core.
+- `datastar_beam`: portable, web-server-neutral Datastar SDK core.
 - `space_cowboy`: Cowboy adapter and Datastar-first mini-framework.
 
 ## Publish Order
 
-1. Publish or extract `data_starship` first.
-2. Publish `space_cowboy` after it depends on the released `data_starship`
+1. Publish or extract `datastar_beam` first.
+2. Publish `space_cowboy` after it depends on the released `datastar_beam`
    package.
 3. Keep Datastar Pro files local-only. The Pro smoke example must never publish
    or vendor licensed assets.
@@ -19,9 +19,9 @@ Before publishing:
 
 - Confirm both OTP app files have a version, description, license, and GitHub
   link.
-- Confirm `data_starship` runtime applications are only `kernel` and `stdlib`.
+- Confirm `datastar_beam` runtime applications are only `kernel` and `stdlib`.
 - Confirm `space_cowboy` runtime applications include `cowboy`, `ranch`, and
-  `data_starship`.
+  `datastar_beam`.
 - Confirm the root `LICENSE` is MIT.
 - Confirm `.local/` is ignored.
 - Confirm all tests pass:
@@ -31,21 +31,21 @@ rebar3 eunit
 rebar3 as quic eunit
 ```
 
-## Data Starship Package
+## Datastar Beam Package
 
-Package name: `data_starship`
+Package name: `datastar_beam`
 
 Current version: `0.1.0`
 
 Publication contents:
 
-- `apps/data_starship/src/data_starship.erl`
-- `apps/data_starship/src/data_starship.app.src`
-- `apps/data_starship/test/*`
+- `apps/datastar_beam/src/datastar_beam.erl`
+- `apps/datastar_beam/src/datastar_beam.app.src`
+- `apps/datastar_beam/test/*`
 - `examples/elixir_smoke.exs`
 - `examples/elixir_usage.exs`
-- `examples/gleam_smoke` modules that only call `data_starship`
-- `docs/data-starship-api.md`
+- `examples/gleam_smoke` modules that only call `datastar_beam`
+- `docs/datastar-beam-api.md`
 - `docs/sdk-adr-plan.md`
 - `LICENSE`
 
@@ -80,5 +80,5 @@ Do not include:
 
 ## Post-Split Follow-Up
 
-After `data_starship` is extracted, update `space_cowboy` to depend on the
+After `datastar_beam` is extracted, update `space_cowboy` to depend on the
 published Hex package instead of the umbrella app path.

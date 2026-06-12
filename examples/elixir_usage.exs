@@ -8,7 +8,7 @@ defmodule DataStarshipUsage do
   end
 
   defp patch_elements do
-    :data_starship.patch_elements(
+    :datastar_beam.patch_elements(
       "<section id=\"panel\">Ready</section>",
       %{
         selector: "#panel",
@@ -21,7 +21,7 @@ defmodule DataStarshipUsage do
   end
 
   defp patch_signals do
-    :data_starship.patch_signals(
+    :datastar_beam.patch_signals(
       "{\"count\":42,\"message\":\"Hello from Elixir\"}",
       only_if_missing: true
     )
@@ -29,7 +29,7 @@ defmodule DataStarshipUsage do
   end
 
   defp execute_script do
-    :data_starship.execute_script(
+    :datastar_beam.execute_script(
       "window.ready = true;</script>",
       auto_remove: false,
       attributes: ["type=\"module\""]
@@ -39,7 +39,7 @@ defmodule DataStarshipUsage do
 
   defp read_signals do
     {:ok, signals} =
-      :data_starship.read_signals(
+      :datastar_beam.read_signals(
         "GET",
         "datastar=%7B%22count%22%3A41%2C%22message%22%3A%22Launch%22%7D",
         ""
@@ -57,13 +57,13 @@ defmodule DataStarshipUsage do
 
     Enum.each(option_cases, fn {map_opts, proplist_opts} ->
       assert_equal(
-        :data_starship.patch_elements("<li>Dock</li>", map_opts),
-        :data_starship.patch_elements("<li>Dock</li>", proplist_opts)
+        :datastar_beam.patch_elements("<li>Dock</li>", map_opts),
+        :datastar_beam.patch_elements("<li>Dock</li>", proplist_opts)
       )
 
       assert_equal(
-        :data_starship.patch_signals("{\"ready\":true}", map_opts),
-        :data_starship.patch_signals("{\"ready\":true}", proplist_opts)
+        :datastar_beam.patch_signals("{\"ready\":true}", map_opts),
+        :datastar_beam.patch_signals("{\"ready\":true}", proplist_opts)
       )
     end)
 
@@ -71,7 +71,7 @@ defmodule DataStarshipUsage do
       json = "{\"value\":\"#{escape_json(value)}\"}"
       query = "datastar=#{percent_encode(json)}"
       expected = %{"value" => value}
-      {:ok, ^expected} = :data_starship.read_signals(:get, query, "")
+      {:ok, ^expected} = :datastar_beam.read_signals(:get, query, "")
     end)
 
     "ok"

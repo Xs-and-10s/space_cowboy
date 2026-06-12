@@ -56,7 +56,7 @@ counter(Req) ->
     Signals = signals_or_empty(Req),
     Count = maps:get(<<"count">>, Signals, 0),
     {sse, [
-        data_starship:patch_signals(#{<<"count">> => Count + 1})
+        datastar_beam:patch_signals(#{<<"count">> => Count + 1})
     ]}.
 
 search(Req) ->
@@ -64,7 +64,7 @@ search(Req) ->
     Query = maps:get(<<"query">>, Signals, <<>>),
     Results = search_results(Query),
     {sse, [
-        data_starship:patch_elements(Results, #{
+        datastar_beam:patch_elements(Results, #{
             selector => <<"#results">>,
             mode => inner
         })
@@ -72,26 +72,26 @@ search(Req) ->
 
 progress(_Req) ->
     {stream, fun(Send) ->
-        Send(data_starship:patch_signals(#{<<"progress">> => 25})),
-        Send(data_starship:patch_elements(<<"<span id=\"phase\">Ignition</span>">>, #{
+        Send(datastar_beam:patch_signals(#{<<"progress">> => 25})),
+        Send(datastar_beam:patch_elements(<<"<span id=\"phase\">Ignition</span>">>, #{
             selector => <<"#phase">>,
             mode => outer
         })),
-        Send(data_starship:patch_signals(#{<<"progress">> => 100})),
+        Send(datastar_beam:patch_signals(#{<<"progress">> => 100})),
         ok
     end}.
 
 script(_Req) ->
     {sse, [
-        data_starship:execute_script(<<"window.spaceCowboyReady = true;">>)
+        datastar_beam:execute_script(<<"window.spaceCowboyReady = true;">>)
     ]}.
 
 malformed(Req) ->
     Body = case space_cowboy_sse:read_signals(Req) of
         {ok, Signals} ->
-            data_starship:patch_signals(#{<<"received">> => Signals});
+            datastar_beam:patch_signals(#{<<"received">> => Signals});
         {error, Reason} ->
-            data_starship:patch_signals(#{<<"error">> => reason_to_binary(Reason)})
+            datastar_beam:patch_signals(#{<<"error">> => reason_to_binary(Reason)})
     end,
     {sse, [Body]}.
 
@@ -131,7 +131,7 @@ body_signals(Req) ->
     Signals = signals_or_empty(Req),
     Value = maps:get(<<"value">>, Signals, <<"Dock">>),
     {sse, [
-        data_starship:patch_signals(#{<<"body">> => Value})
+        datastar_beam:patch_signals(#{<<"body">> => Value})
     ]}.
 
 heartbeat(_Req) ->

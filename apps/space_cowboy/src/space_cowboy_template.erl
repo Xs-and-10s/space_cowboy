@@ -42,6 +42,6 @@ patch_elements(Rendered) ->
     patch_elements(Rendered, #{}).
 
 %% @doc Build a Datastar patch-elements SSE event from rendered output.
--spec patch_elements(rendered(), data_starship:options()) -> iodata().
+-spec patch_elements(rendered(), datastar_beam:options()) -> iodata().
 patch_elements(Rendered, Options) ->
-    data_starship:patch_elements(to_iodata(Rendered), Options).
+    datastar_beam:patch_elements(to_iodata(Rendered), Options).

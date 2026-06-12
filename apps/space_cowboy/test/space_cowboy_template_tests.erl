@@ -60,7 +60,7 @@ template_lazy_render_property_test() ->
     ?assert(proper:quickcheck(prop_template_lazy_render_normalizes_to_same_bytes(), proper_opts())).
 
 template_patch_property_test() ->
-    ?assert(proper:quickcheck(prop_template_patch_matches_data_starship(), proper_opts())).
+    ?assert(proper:quickcheck(prop_template_patch_matches_datastar_beam(), proper_opts())).
 
 proper_opts() ->
     [{numtests, ?NUMTESTS}, {to_file, user}].
@@ -92,13 +92,13 @@ prop_template_lazy_render_normalizes_to_same_bytes() ->
                 andalso space_cowboy_template:html(Render) =:= {html, Iodata}
         end).
 
-prop_template_patch_matches_data_starship() ->
+prop_template_patch_matches_datastar_beam() ->
     ?FORALL(Generated, {rendered_iodata(), selector(), patch_mode()},
         begin
             {Iodata, Selector, Mode} = Generated,
             Options = #{selector => Selector, mode => Mode},
             iolist_to_binary(space_cowboy_template:patch_elements({safe, Iodata}, Options))
-                =:= iolist_to_binary(data_starship:patch_elements(Iodata, Options))
+                =:= iolist_to_binary(datastar_beam:patch_elements(Iodata, Options))
         end).
 
 datastar_attr_name() ->

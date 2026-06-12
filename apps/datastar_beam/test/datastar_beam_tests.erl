@@ -1,15 +1,15 @@
--module(data_starship_tests).
+-module(datastar_beam_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 
 patch_elements_minimal_test() ->
     ?assertEqual(
         <<"event: datastar-patch-elements\ndata: elements <div id=\"foo\">Hello</div>\n\n">>,
-        iolist_to_binary(data_starship:patch_elements(<<"<div id=\"foo\">Hello</div>">>))
+        iolist_to_binary(datastar_beam:patch_elements(<<"<div id=\"foo\">Hello</div>">>))
     ).
 
 patch_elements_options_test() ->
-    Event = iolist_to_binary(data_starship:patch_elements(
+    Event = iolist_to_binary(datastar_beam:patch_elements(
         <<"<li>One</li>\n<li>Two</li>">>,
         #{
             selector => <<"#items">>,
@@ -37,7 +37,7 @@ patch_elements_safe_tuple_test() ->
         <<"event: datastar-patch-elements\n"
           "data: selector #safe\n"
           "data: elements <strong>Safe</strong>\n\n">>,
-        iolist_to_binary(data_starship:patch_elements(
+        iolist_to_binary(datastar_beam:patch_elements(
             {safe, [<<"<strong>">>, <<"Safe">>, <<"</strong>">>]},
             #{selector => <<"#safe">>}
         ))
@@ -48,7 +48,7 @@ patch_elements_remove_without_elements_test() ->
         <<"event: datastar-patch-elements\n"
           "data: selector #toast\n"
           "data: mode remove\n\n">>,
-        iolist_to_binary(data_starship:patch_elements(undefined, #{
+        iolist_to_binary(datastar_beam:patch_elements(undefined, #{
             selector => <<"#toast">>,
             mode => remove
         }))
@@ -60,11 +60,11 @@ remove_elements_test() ->
           "id: rm-1\n"
           "data: selector #toast\n"
           "data: mode remove\n\n">>,
-        iolist_to_binary(data_starship:remove_elements(<<"#toast">>, #{event_id => <<"rm-1">>}))
+        iolist_to_binary(datastar_beam:remove_elements(<<"#toast">>, #{event_id => <<"rm-1">>}))
     ).
 
 patch_signals_from_map_test() ->
-    Event = iolist_to_binary(data_starship:patch_signals(
+    Event = iolist_to_binary(datastar_beam:patch_signals(
         #{<<"hal">> => <<"Affirmative">>, <<"count">> => 1},
         #{only_if_missing => true}
     )),
@@ -78,7 +78,7 @@ patch_signals_from_map_test() ->
     ?assert(binary:match(Event, <<"\"count\":1">>) =/= nomatch).
 
 remove_signals_test() ->
-    Event = iolist_to_binary(data_starship:remove_signals(
+    Event = iolist_to_binary(datastar_beam:remove_signals(
         [<<"user.name">>, <<"user.email">>, <<"session">>]
     )),
     {ok, Json} = extract_single_data_value(<<"signals">>, Event),
@@ -93,7 +93,7 @@ remove_signals_test() ->
 remove_signals_rejects_invalid_path_test() ->
     ?assertError(
         {invalid_signal_path, consecutive_dots, <<"user..name">>},
-        iolist_to_binary(data_starship:remove_signals(<<"user..name">>))
+        iolist_to_binary(datastar_beam:remove_signals(<<"user..name">>))
     ).
 
 execute_script_test() ->
@@ -102,11 +102,11 @@ execute_script_test() ->
           "data: selector body\n"
           "data: mode append\n"
           "data: elements <script data-effect=\"el.remove()\">console.log(1)<\\/script></script>\n\n">>,
-        iolist_to_binary(data_starship:execute_script(<<"console.log(1)</script>">>))
+        iolist_to_binary(datastar_beam:execute_script(<<"console.log(1)</script>">>))
     ).
 
 execute_script_attribute_map_test() ->
-    Event = iolist_to_binary(data_starship:execute_script(<<"import('/app.js')">>, #{
+    Event = iolist_to_binary(datastar_beam:execute_script(<<"import('/app.js')">>, #{
         attributes => #{<<"type">> => <<"module">>, <<"data-value">> => <<"<tag>\"&">>}
     })),
     ?assert(binary:match(Event, <<"data-effect=\"el.remove()\"">>) =/= nomatch),
@@ -114,50 +114,50 @@ execute_script_attribute_map_test() ->
     ?assert(binary:match(Event, <<"data-value=\"&lt;tag&gt;&quot;&amp;\"">>) =/= nomatch).
 
 redirect_test() ->
-    Event = iolist_to_binary(data_starship:redirect(<<"/path?name=O'Reilly">>)),
+    Event = iolist_to_binary(datastar_beam:redirect(<<"/path?name=O'Reilly">>)),
     ?assert(binary:match(Event, <<"setTimeout(function(){window.location.href=">>) =/= nomatch),
     ?assert(binary:match(Event, <<"\"/path?name=O'Reilly\"">>) =/= nomatch).
 
 console_log_test() ->
-    Event = iolist_to_binary(data_starship:console_log(<<"Careful">>, #{level => warn})),
+    Event = iolist_to_binary(datastar_beam:console_log(<<"Careful">>, #{level => warn})),
     ?assert(binary:match(Event, <<"console.warn(\"Careful\")">>) =/= nomatch).
 
 action_helpers_test() ->
-    ?assertEqual(<<"@post('/counter/increment')">>, iolist_to_binary(data_starship:post(<<"/counter/increment">>))),
+    ?assertEqual(<<"@post('/counter/increment')">>, iolist_to_binary(datastar_beam:post(<<"/counter/increment">>))),
     ?assertEqual(
         <<"@delete('/items/42', {retryMaxCount: Infinity})">>,
-        iolist_to_binary(data_starship:delete(
+        iolist_to_binary(datastar_beam:delete(
             <<"/items/42">>,
             #{options => <<"{retryMaxCount: Infinity}">>}
         ))
     ),
     ?assertEqual(
         <<"@get('/search?q=O\\'Reilly\\\\books')">>,
-        iolist_to_binary(data_starship:get(<<"/search?q=O'Reilly\\books">>))
+        iolist_to_binary(datastar_beam:get(<<"/search?q=O'Reilly\\books">>))
     ).
 
 read_get_signals_test() ->
     ?assertEqual(
         {ok, #{<<"foo">> => 1}},
-        data_starship:read_signals(get, <<"datastar=%7B%22foo%22%3A1%7D">>, <<>>)
+        datastar_beam:read_signals(get, <<"datastar=%7B%22foo%22%3A1%7D">>, <<>>)
     ).
 
 read_get_signals_invalid_query_test() ->
     ?assertEqual(
         {error, invalid_query},
-        data_starship:read_signals(get, <<"%">>, <<>>)
+        datastar_beam:read_signals(get, <<"%">>, <<>>)
     ).
 
 read_post_signals_test() ->
     ?assertEqual(
         {ok, #{<<"foo">> => 1}},
-        data_starship:read_signals(post, <<>>, <<"{\"foo\":1}">>)
+        datastar_beam:read_signals(post, <<>>, <<"{\"foo\":1}">>)
     ).
 
 read_delete_signals_test() ->
     ?assertEqual(
         {ok, #{<<"id">> => 7}},
-        data_starship:read_signals(delete, <<"datastar=%7B%22id%22%3A7%7D">>, <<>>)
+        datastar_beam:read_signals(delete, <<"datastar=%7B%22id%22%3A7%7D">>, <<>>)
     ).
 
 extract_single_data_value(Key, Event) ->
